@@ -1,0 +1,20 @@
+# LingPy / QLC example profile for testing orthography profiles and tokenization
+# 
+graphemes	IPA	XSAMPA
+a	a	a
+aa	aː	a:
+b	b	b
+c	c	c
+ch	tʃ	tS
+-	NULL	NULL
+on	õ	o~
+n	n	n
+ih	í	i_H
+inh	ĩ́	i~_H
+
+
+# aabchonn-ih
+# aa b ch on n ih
+# aː b tʃ õ n í 
+# a: b tS o~ n i_H 
+# aabchonn-ihzz

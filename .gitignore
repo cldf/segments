@@ -1,0 +1,16 @@
+__pycache__
+*.pyc
+*.so
+*~
+*.swp
+/build
+/dist
+/doc/build
+/doc/out
+/lingpy/data/models/*/*.bin
+/generated/
+/lingpy/plugins/
+.idea
+.coverage
+.tox
+segments.egg-info
