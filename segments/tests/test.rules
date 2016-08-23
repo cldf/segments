@@ -1,0 +1,14 @@
+# An example of an orthography profile rules file
+#
+# Initial metadata and all comments are preceded by "#". Blank lines are skipped by the tokenizer.
+#
+# Rules are given in tuple format, comma delimited. Regular expressions are given in Python syntax.
+#
+# Be ware of feeding and bleeding.
+
+a{2}, b
+bb, c
+c.*n,ii
+h,i
+
+# aabchonn-ih
