@@ -1,12 +1,12 @@
 # -*- coding: utf-8 -*-
 """
-Tokenizer of Unicode characters, grapheme clusters and tailored grapheme clusters (of orthographies) given an orthography profile.
-
+Tokenizer of Unicode characters, grapheme clusters and tailored grapheme clusters (of orthographies) given an orthography profile.  
 """
 from __future__ import unicode_literals, division, absolute_import, print_function
 import os
 import unicodedata
 import regex as re
+from six import text_type
 
 from segments.tree import Tree
 from segments.util import normalized_rows, normalized_string
@@ -14,9 +14,10 @@ from segments.util import normalized_rows, normalized_string
 
 class Tokenizer(object):
     """
-    Class for Unicode character and grapheme tokenization, with extended functionality for 
-    orthography-specific tokenization with orthography profiles, as designed for the QLC
-    project: http://quanthistling.info/.
+    Class for Unicode character and grapheme tokenization.
+    
+    This class provides extended functionality for 
+    orthography-specific tokenization with orthography profiles.
 
     Parameters
     ----------
@@ -47,7 +48,7 @@ class Tokenizer(object):
     <uu> is a single grapheme (Unicode parlance: tailored grapheme) and
     thererfore it should be chunked as so. Given an orthography profile and
     some data to tokenize, the process would look like this:
-
+    
     input string example: uubo uubo
     output string example: uu b o # uu b o
 
@@ -59,7 +60,7 @@ class Tokenizer(object):
     are called "Tailored grapheme clusters" in Unicode. For more information
     see the Unicode Standard Annex #29: Unicode Text Segmentation:
 
-    http://www.unicode.org/reports/tr29/
+    * http://www.unicode.org/reports/tr29/
 
     Additionally, the Tokenizer provides functionality to transform graphemes
     into associated character(s) specified in additional columns in the orthography
@@ -76,14 +77,24 @@ class Tokenizer(object):
     expressions, e.g. this rule replaces a vowel followed by an <n>
     followed by <space> followed by a second vowel with first vowel
     <space> <n> <space> second vowel, e.g.:
-
-    ([a|á|e|é|i|í|o|ó|u|ú])(n)(\s)([a|á|e|é|i|í|o|ó|u|ú]), \1 \2 \4
+    
+    $ ([a|á|e|é|i|í|o|ó|u|ú])(n)(\s)([a|á|e|é|i|í|o|ó|u|ú]), \1 \2 \4
 
     """
     grapheme_pattern = re.compile("\X", re.UNICODE)
 
-    def __init__(self, orthography_profile=None, orthography_profile_rules=None):
-        self.orthography_profile = orthography_profile
+    def __init__(self, orthography_profile=None,
+            orthography_profile_rules=None, delimiter='\t'):
+        if not orthography_profile:
+            self.orthography_profile = None
+            self._data = None
+        elif isinstance(orthography_profile, text_type):
+            self.orthography_profile = orthography_profile
+            self._data = list(normalized_rows(orthography_profile, delimiter))
+        else:
+            self.orthography_profile = 'custom'
+            self._data = orthography_profile
+        
         self.orthography_profile_rules = orthography_profile_rules
         self.tree = None
 
@@ -98,8 +109,9 @@ class Tokenizer(object):
 
         # orthography profile processing
         if self.orthography_profile:
+            
             # read in orthography profile and create a trie structure for tokenization
-            self.tree = Tree(self.orthography_profile)
+            self.tree = Tree(self._data)
             # process the orthography profiles and rules
             self._init_profile()
 
@@ -118,7 +130,7 @@ class Tokenizer(object):
         """
         Process and initialize data structures given an orthography profile.
         """
-        for tokens in normalized_rows(self.orthography_profile, '\t'):
+        for tokens in self._data:
             # deal with the columns header -- should always start with "graphemes" as per the orthography profiles specification
             if tokens[0].lower().startswith("graphemes"):
                 self.column_labels.extend([token.lower() for token in tokens])
@@ -130,7 +142,7 @@ class Tokenizer(object):
             if grapheme not in self.op_graphemes:
                 self.op_graphemes[grapheme] = 1
             else:
-                raise Exception("You have a duplicate in your orthography profile.")
+                raise Exception("{0} is duplicate in your orthography profile.".format(grapheme))
 
             if len(tokens) == 1:
                 continue
@@ -186,7 +198,7 @@ class Tokenizer(object):
         # init the regex Unicode grapheme cluster match
         return ' '.join(self.grapheme_pattern.findall(normalized_string(string)))
 
-    def graphemes(self, string):
+    def graphemes(self, string, missing="?"):
         """
         Tokenizes strings given an orthograhy profile that specifies graphemes in a source doculect.
 
@@ -209,18 +221,38 @@ class Tokenizer(object):
         parses = []
         for word in normalized_string(string, add_boundaries=False).split():
             parse = self.tree.parse(word)
-
             # case where the parsing fails
             if not parse:
                 # replace characters in string but not in orthography profile with <?>
-                parse = " " + self.find_missing_characters(self.characters(word))
-
+                parse = " " + self.find_missing_characters(self.characters(word),
+                        missing=missing)
             parses.append(parse)
 
         # remove the outer word boundaries
         return "".join(parses).replace("##", "#").rstrip("#").lstrip("#").strip()
 
-    def transform(self, string, column="graphemes"):
+    def _search_graphemes(self, string, _missing='???'):
+        """Helper function to parse graphemes, including missing ones."""
+        graphemes = self.graphemes(string, missing=_missing)
+        if not _missing in graphemes.split(' '):
+            return graphemes
+        out = []
+        rest = string
+        while rest:
+            best_idx = 1
+            best_match = rest[:best_idx]
+            for i in range(1, len(rest)):
+                new_string = rest[:i]
+                new_parse = self.graphemes(new_string, missing=_missing)
+                if not _missing in new_parse.split(' '):
+                    best_idx = i
+                    best_match = new_parse
+            out += [best_match]
+            rest = rest[best_idx:]
+        return ' '.join(out) 
+
+    def transform(self, string, column="graphemes", exception=None,
+            missing=None, _missing='???', separator=' # '):
         """
         Transform a string's graphemes into the mappings given in a different column
         in the orthography profile. By default this function returns an orthography
@@ -241,28 +273,37 @@ class Tokenizer(object):
 
         """
         column = column.lower()
+        exception = exception or {"#": "#", "?": "?"}
+        if not missing:
+            missing = lambda x: '<{0}>'.format(x)
 
         # This method can't be called unless an orthography profile was specified.
         if not self.orthography_profile:
             raise Exception("This method only works when an orthography profile is specified.")
 
         if column == "graphemes":
-            return self.graphemes(string)
+            return self._search_graphemes(string, _missing=missing)
 
         # if the column label for conversion doesn't exist, return grapheme tokenization
         if column not in self.column_labels:
-            return self.graphemes(string)
+            raise ValueError("Column {0} not found in profile.".format(column)) 
 
         result = []
-        for token in self.graphemes(string).split():
-            # special cases: word breaks and unparsables
-            # default: transform given the grapheme and column label; skip NULL
-            target = {'#': '#', '?': '?'}.get(token) or self.mappings[token, column]
-            if target != "NULL":
-                # result.append(self.mappings[token, column])
-                result.append(target)
+        # convert string to raw string to allow for parsing of backslashes
+        for part in string.split(' '):
+            out = []
+            for token in self._search_graphemes(r''+part, _missing=_missing).split(' '):
+                target = (
+                        exception.get(token) or \
+                                self.mappings.get((token, column)) or \
+                                missing(token)
+                                )
+                if target != "NULL":
+                    # result.append(self.mappings[token, column])
+                    out.append(target)
+            result.append(' '.join(out))
 
-        return " ".join(result).strip()
+        return separator.join(result).strip()
 
     def tokenize(self, string, column="graphemes"):
         """
@@ -331,14 +372,14 @@ class Tokenizer(object):
         # in the orthography profile
         return normalized_string(result, add_boundaries=False)
 
-    def find_missing_characters(self, char_tokenized_string):
+    def find_missing_characters(self, char_tokenized_string, missing="?"):
         """
         Given a string tokenized into characters, return a characters
         tokenized string where each character missing from the orthography
         profile is replaced with a question mark <?>.
         """
         return " ".join(
-            [c if c in self.op_graphemes else "?" for c in char_tokenized_string.split()])
+            [c if c in self.op_graphemes else missing for c in char_tokenized_string.split()])
 
     def tokenize_ipa(self, string):
         """

@@ -1,8 +1,5 @@
 from __future__ import unicode_literals, print_function
 
-from segments.util import normalized_rows
-
-
 class TreeNode(object):
     """
     Private class that creates the tree data structure from the orthography profile for parsing.
@@ -15,7 +12,8 @@ class TreeNode(object):
 
 
 class Tree(object):
-    def __init__(self, filename):
+    def __init__(self, data):
+        
         # Internal function to add a multigraph starting at node.
         def addMultigraph(node, line):
             for char in line:
@@ -25,8 +23,8 @@ class Tree(object):
         # Add all multigraphs in each line of file_name.
         # Skip "#" comments and blank lines.
         self.root = TreeNode('', sentinel=True)
-
-        for i, tokens in enumerate(normalized_rows(filename, '\t')):
+        
+        for i, tokens in enumerate(data):
             if i == 0 and tokens[0].lower().startswith("graphemes"):
                 # deal with the columns header -- should always start with "graphemes" as
                 # per the orthography profiles specification
@@ -38,7 +36,7 @@ class Tree(object):
         parse = self._parse(self.root, line)
         return "# " + parse if parse else ""
 
-    def _parse(self, root, line):
+    def _parse(self, root, line, idx=0):
         # Base (or degenerate..) case.
         if len(line) == 0:
             return "#"
@@ -46,21 +44,42 @@ class Tree(object):
         parse = ""
         curr = 0
         node = root
+        #matches = []
         while curr < len(line):
             node = node.children.get(line[curr])
             curr += 1
             if not node:
                 break
             if node.sentinel:
-                subparse = self._parse(root, line[curr:])
+                subparse = self._parse(root, line[curr:], idx=curr)
                 if len(subparse) > 0:
                     # Always keep the latest valid parse, which will be
                     # the longest-matched (greedy match) graphemes.
                     parse = line[:curr] + " " + subparse
-
-        # Note that if we've reached EOL, but not end of valid grapheme,
-        # this will be an empty string.
         return parse
+    
+    def _parse2(self, root, data, idx=0):
+
+
+        output = []
+        string = data[-1][1]
+        if len(string) == 0:
+            return ''
+        node = root
+        while idx < len(string):
+            print(output)
+            print(string)
+            node = node.children.get(string[idx])
+            output += [(idx, string[:idx+1])]
+            idx += 1
+            if not node:
+                break
+            if node.sentinel:
+                subparse = self._parse2(root, [(idx, string[idx:])], idx=idx)
+            if subparse:
+                output += subparse
+
+        return output
 
     def printTree(self, root, path=''):
         for char, child in root.children.items():
