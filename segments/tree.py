@@ -5,7 +5,8 @@ from segments.util import normalized_rows
 
 class TreeNode(object):
     """
-    Private class that creates the tree data structure from the orthography profile for parsing.
+    Private class that creates the tree data structure from the orthography profile for
+    parsing.
     """
 
     def __init__(self, char, sentinel=False):
@@ -15,7 +16,7 @@ class TreeNode(object):
 
 
 class Tree(object):
-    def __init__(self, filename):
+    def __init__(self, token_list):
         # Internal function to add a multigraph starting at node.
         def addMultigraph(node, line):
             for char in line:
@@ -26,12 +27,7 @@ class Tree(object):
         # Skip "#" comments and blank lines.
         self.root = TreeNode('', sentinel=True)
 
-        for i, tokens in enumerate(normalized_rows(filename, '\t')):
-            if i == 0 and tokens[0].lower().startswith("graphemes"):
-                # deal with the columns header -- should always start with "graphemes" as
-                # per the orthography profiles specification
-                continue
-
+        for tokens in token_list:
             addMultigraph(self.root, tokens[0])
 
     def parse(self, line):
