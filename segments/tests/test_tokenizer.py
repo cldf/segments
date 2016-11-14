@@ -3,7 +3,11 @@ from __future__ import unicode_literals
 import os
 import codecs
 import unittest
-from segments.tokenizer import Tokenizer
+
+from nose import tools
+from mock import Mock, patch
+
+from segments.tokenizer import Tokenizer, Profile
 from segments.tree import printMultigraphs
 
 
@@ -11,49 +15,44 @@ def _test_path(fname):
     return os.path.join(os.path.dirname(__file__), fname)
 
 
-def jipa(input, gold):
-    with codecs.open(_test_path(input), "r", "utf-8") as infile:
-        input = infile.read()
-    with codecs.open(_test_path(gold), "r", "utf-8") as goldfile:
-        gold = goldfile.read()
-    return(input, gold)
+def test_jipa():
+    def check(lang):
+        tokenize = Tokenizer()
+        with codecs.open(_test_path(lang + '_input.txt'), "r", "utf-8") as infile:
+            input = infile.read()
+        with codecs.open(_test_path(lang + '_output.txt'), "r", "utf-8") as goldfile:
+            gold = goldfile.read()
+        tools.assert_equal(tokenize(input, ipa=True), gold)
+
+    for lang in ['Kabiye', 'Brazilian_Portuguese', 'Vietnamese', 'Zurich_German']:
+        yield check, lang
+
+
+class TestProfile(unittest.TestCase):
+    def test_duplicate_grapheme(self):
+        mock_log = Mock()
+        with patch('segments.tokenizer.logging', Mock(getLogger=lambda n: mock_log)):
+            Profile([['graphemes', 'other'], ['a', 'b'], ['a', 'b']])
+            assert mock_log.warn.called
 
 
 class TokenizerTestCase(unittest.TestCase):
     """ Tests for tokenizer.py """
-    maxDiff = None # for printing large output
+    maxDiff = None  # for printing large output
 
     def setUp(self):
         self.t = Tokenizer(_test_path('test.prf'))
 
+    def test_tokenize_with_profile(self):
+        self.assertEqual(self.t('aa'), 'b')
+
+    def test_tokenize_without_profile(self):
+        self.assertEqual(Tokenizer()('aa', form='NFC'), 'a a')
+
     def test_printTree(self):
-        self.t.tree.printTree(self.t.tree.root)
-        printMultigraphs(self.t.tree.root, '', '')
-        printMultigraphs(self.t.tree.root, 'abcd', '')
-
-    def test_kabiye(self):
-        t = Tokenizer()
-        input, gold = jipa("Kabiye_input.txt", "Kabiye_output.txt")
-        result = t.tokenize_ipa(input)
-        self.assertEqual(result, gold)
-
-    def test_portuguese(self):
-        t = Tokenizer()
-        input, gold = jipa("Brazilian_Portuguese_input.txt", "Brazilian_Portuguese_output.txt")
-        result = t.tokenize_ipa(input)
-        self.assertEqual(result, gold)
-
-    def test_vietnamese(self):
-        t = Tokenizer()
-        input, gold = jipa("Vietnamese_input.txt", "Vietnamese_output.txt")
-        result = t.tokenize_ipa(input)
-        self.assertEqual(result, gold)
-
-    def test_german(self):
-        t = Tokenizer()
-        input, gold = jipa("Zurich_German_input.txt", "Zurich_German_output.txt")
-        result = t.tokenize_ipa(input)
-        self.assertEqual(result, gold)
+        self.t.op.tree.printTree(self.t.op.tree.root)
+        printMultigraphs(self.t.op.tree.root, '', '')
+        printMultigraphs(self.t.op.tree.root, 'abcd', '')
 
     def test_characters(self):
         t = Tokenizer()
@@ -67,15 +66,15 @@ class TokenizerTestCase(unittest.TestCase):
         
     def test_graphemes(self):
         t = Tokenizer()
-        result = t.graphemes("aabchonn-ih")
-        self.assertEqual(result, "a a b c h o n n - i h")
-
-        result = self.t.graphemes("aabchonn-ih")
-        self.assertEqual(result, "aa b ch on n - ih")
+        self.assertEqual(t.graphemes("aabchonn-ih"), "a a b c h o n n - i h")
+        self.assertEqual(self.t.graphemes("aabchonn-ih"), "aa b ch on n - ih")
 
     def test_transform1(self):
-        result = self.t.transform("aabchonn-ih")
-        self.assertEqual(result, "aa b ch on n - ih")
+        self.assertEqual(self.t.transform("aabchonn-ih", 'xx'), "aa b ch on n - ih")
+        self.assertEqual(self.t.transform("aabchonn-ih"), "aa b ch on n - ih")
+
+        with self.assertRaises(ValueError):
+            Tokenizer().transform('abc')
 
     def test_transform2(self):
         result = self.t.transform("aabchonn-ih", "ipa")
@@ -86,6 +85,7 @@ class TokenizerTestCase(unittest.TestCase):
         self.assertEqual(result, "a: b tS o~ n i_H")
 
     def test_rules(self):
+        self.assertEqual(Tokenizer().rules('abc'), 'abc')
         result = self.t.rules("aabchonn-ih")
         self.assertEqual(result, "ii-ii")
 
