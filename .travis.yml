@@ -1,7 +1,7 @@
 language: python
 python:
 - 2.7
-- 3.3
+- 3.4
 notifications:
 email: false
  
@@ -24,7 +24,7 @@ install:
 - pip install regex
 - pip install mock
 - pip install coverage
-- pip install coveralls
+- pip install codecov
 - python setup.py install
  
 # Run test
@@ -33,4 +33,4 @@ script:
  
 # Calculate coverage
 after_success:
-- coveralls
+- codecov
