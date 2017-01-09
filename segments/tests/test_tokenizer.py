@@ -70,11 +70,11 @@ class TokenizerTestCase(unittest.TestCase):
         self.assertEqual(self.t.graphemes("aabchonn-ih"), "aa b ch on n - ih")
 
     def test_transform1(self):
-        self.assertEqual(self.t.transform("aabchonn-ih", 'xx'), "aa b ch on n - ih")
         self.assertEqual(self.t.transform("aabchonn-ih"), "aa b ch on n - ih")
 
         with self.assertRaises(ValueError):
             Tokenizer().transform('abc')
+            self.assertEqual(self.t.transform("aabchonn-ih", 'xx'), "aa b ch on n - ih")
 
     def test_transform2(self):
         result = self.t.transform("aabchonn-ih", "ipa")
