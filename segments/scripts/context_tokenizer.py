@@ -41,6 +41,7 @@ from segments import context_tokenizer
 import unicodedata
 
 __version__ = "0.1.0"
+# flake8: noqa
 
 
 def main():  # pragma: no cover

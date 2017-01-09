@@ -13,6 +13,8 @@ import regex as re
 from io import open
 from collections import defaultdict
 
+# flake8: noqa
+
 PY3 = sys.version_info > (3,)
 if PY3:
     xrange = range

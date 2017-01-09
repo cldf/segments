@@ -4,6 +4,7 @@ import os
 import codecs
 import unittest
 
+from six import StringIO
 from nose import tools
 from mock import Mock, patch
 
@@ -50,7 +51,10 @@ class TokenizerTestCase(unittest.TestCase):
         self.assertEqual(Tokenizer()('aa', form='NFC'), 'a a')
 
     def test_printTree(self):
-        self.t.op.tree.printTree(self.t.op.tree.root)
+        stream = StringIO()
+        self.t.op.tree.printTree(self.t.op.tree.root, stream=stream)
+        stream.seek(0)
+        self.assertIn('a* -- a*', stream.read().split('\n'))
         printMultigraphs(self.t.op.tree.root, '', '')
         printMultigraphs(self.t.op.tree.root, 'abcd', '')
 
@@ -63,7 +67,7 @@ class TokenizerTestCase(unittest.TestCase):
         t = Tokenizer()
         result = t.grapheme_clusters("ĉháɾã̌ctʼɛ↗ʐː| k͡p")
         self.assertEqual(result, "ĉ h á ɾ ã̌ c t ʼ ɛ ↗ ʐ ː | # k͡ p")
-        
+
     def test_graphemes(self):
         t = Tokenizer()
         self.assertEqual(t.graphemes("aabchonn-ih"), "a a b c h o n n - i h")
@@ -74,6 +78,8 @@ class TokenizerTestCase(unittest.TestCase):
 
         with self.assertRaises(ValueError):
             Tokenizer().transform('abc')
+
+        with self.assertRaises(ValueError):
             self.assertEqual(self.t.transform("aabchonn-ih", 'xx'), "aa b ch on n - ih")
 
     def test_transform2(self):
