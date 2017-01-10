@@ -5,12 +5,16 @@ import os
 import argparse
 from collections import OrderedDict, Counter
 
+from six import PY2
+
 from segments.tokenizer import Tokenizer
 from segments import util
 
 
 def _print(args, line):
-    print(line.encode(args.encoding))
+    if PY2:
+        line = line.encode(args.encoding)
+    print(line)
 
 
 def tokenize(args):
@@ -43,7 +47,7 @@ class ParserError(Exception):
     pass
 
 
-class ArgumentParser(argparse.ArgumentParser):
+class ArgumentParser(argparse.ArgumentParser):  # pragma: no cover
     """
     An command line argument parser supporting sub-commands in a simple way.
     """
@@ -83,6 +87,6 @@ class ArgumentParser(argparse.ArgumentParser):
         return 0
 
 
-def main():
+def main():  # pragma: no cover
     parser = ArgumentParser(tokenize, profile)
     sys.exit(parser.main())
