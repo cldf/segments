@@ -13,6 +13,7 @@ from six import string_types
 
 from segments.tree import Tree
 from segments.util import normalized_rows, normalized_string
+from segments import errors
 
 
 class Profile(object):
@@ -138,15 +139,28 @@ class Tokenizer(object):
                  profile=None,
                  profile_delimiter='\t',
                  rules=None,
-                 rules_delimiter=','):
+                 rules_delimiter=',',
+                 errors_strict=errors.strict,
+                 errors_replace=errors.replace,
+                 errors_ignore=errors.ignore):
         self.op = Profile(profile, profile_delimiter) if profile else None
         if not rules and profile and isinstance(profile, string_types):
             _rules = os.path.splitext(profile)[0] + '.rules'
             if os.path.exists(_rules):
                 rules = _rules
         self._rules = Rules(rules, rules_delimiter) if rules else None
+        self._errors = {
+            'strict': errors_strict,
+            'replace': errors_replace,
+            'ignore': errors_ignore,
+        }
 
-    def __call__(self, string, column="graphemes", form=None, ipa=False):
+    def __call__(self,
+                 string,
+                 column="graphemes",
+                 form=None,
+                 ipa=False,
+                 errors='replace'):
         """
         The main task of a Tokenizer is tokenizing! This is what happens when called.
 
@@ -178,7 +192,7 @@ class Tokenizer(object):
             res = self.combine_modifiers(self.grapheme_clusters(string))
         else:
             if self.op:
-                res = self.transform(string, column)
+                res = self.transform(string, column, errors=errors)
             else:
                 res = self.grapheme_clusters(string)
 
@@ -240,7 +254,7 @@ class Tokenizer(object):
         # init the regex Unicode grapheme cluster match
         return ' '.join(self.grapheme_pattern.findall(normalized_string(string)))
 
-    def graphemes(self, string, missing="?"):
+    def graphemes(self, string, errors='replace'):
         """
         Tokenizes strings given an orthograhy profile that specifies graphemes in a source
         doculect.
@@ -269,42 +283,17 @@ class Tokenizer(object):
             if not parse:
                 # replace characters in string but not in orthography profile with <?>
                 parse = " " + self.find_missing_characters(
-                    self.characters(word), missing=missing)
+                    self.characters(word), errors=errors)
             parses.append(parse)
 
         # remove the outer word boundaries
         return "".join(parses).replace("##", "#").rstrip("#").lstrip("#").strip()
 
-    def _search_graphemes(self, string, _missing='???'):
-        """Helper function to parse graphemes, including missing ones."""
-        graphemes = self.graphemes(string, missing=_missing)
-        if _missing not in graphemes.split(' '):
-            return graphemes
-        out = []
-        rest = string
-        while rest:
-            best_idx = 1
-            best_match = rest[:best_idx]
-            for i in range(1, len(rest)):
-                new_string = rest[:i]
-                new_parse = self.graphemes(new_string, missing=_missing)
-                if _missing not in new_parse.split(' '):
-                    best_idx = i
-                    best_match = new_parse
-            out += [best_match]
-            rest = rest[best_idx:]
-        return ' '.join(out)
-
-    @staticmethod
-    def missing(c):
-        return '<{0}>'.format(c)
-
     def transform(self,
                   string,
                   column="graphemes",
+                  errors='replace',
                   exception=None,
-                  missing=None,
-                  _missing='???',
                   separator=' # '):
         """
         Transform a string's graphemes into the mappings given in a different column
@@ -326,17 +315,16 @@ class Tokenizer(object):
             Result of the transformation.
 
         """
-        column = column.lower()
         exception = exception or {"#": "#", "?": "?"}
-        missing = missing or self.missing
 
         # This method can't be called unless an orthography profile was specified.
         if not self.op:
             raise ValueError(
                 "This method only works when an orthography profile is specified.")
 
+        column = column.lower()
         if column == "graphemes":
-            return self._search_graphemes(string, _missing=missing)
+            return self.graphemes(string, errors=errors)
 
         # if the column label for conversion doesn't exist, return grapheme tokenization
         if column not in self.op.column_labels:
@@ -346,11 +334,11 @@ class Tokenizer(object):
         # convert string to raw string to allow for parsing of backslashes
         for part in string.split(' '):
             out = []
-            for token in self._search_graphemes(r'' + part, _missing=_missing).split(' '):
+            for token in self.graphemes(r'' + part, errors=errors).split(' '):
                 target = (
                     exception.get(token) or
                     self.op.mappings.get((token, column)) or
-                    missing(token))
+                    self._errors['replace'](token))
                 if target != "NULL":
                     # result.append(self.mappings[token, column])
                     out.append(target)
@@ -392,20 +380,15 @@ class Tokenizer(object):
         # in the orthography profile
         return normalized_string(result, add_boundaries=False)
 
-    def find_missing_characters(self, char_tokenized_string, missing="?"):
+    def find_missing_characters(self, char_tokenized_string, errors='replace'):
         """
         Given a string tokenized into characters, return a characters
         tokenized string where each character missing from the orthography
         profile is replaced with a question mark <?>.
         """
+        error = self._errors[errors]
         return " ".join(
-            [c if c in self.op else missing for c in char_tokenized_string.split()])
-
-    def tokenize_ipa(self, string):
-        """
-        Work in progress method for tokenizing IPA.
-        """
-        return self.combine_modifiers(self.grapheme_clusters(string))
+            [c if c in self.op else error(c) for c in char_tokenized_string.split()])
 
     def combine_modifiers(self, string):
         """
@@ -433,7 +416,7 @@ class Tokenizer(object):
                 # string
                 if count == 0:
                     result[-1] = temp + result[-1]
-                continue
+                continue  # pragma: no cover
             # catch and repair stress marks
             if len(grapheme) == 1 and ord(grapheme) in [712, 716]:
                 result[-1] = grapheme + result[-1]
