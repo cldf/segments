@@ -44,6 +44,19 @@ class TokenizerTestCase(unittest.TestCase):
     def setUp(self):
         self.t = Tokenizer(_test_path('test.prf'))
 
+    def test_errors(self):
+        t = Tokenizer(_test_path('test.prf'), errors_replace=lambda c: '<{0}>'.format(c))
+        self.assertEqual(t('habe'), '<i> a b <e>')
+
+        with self.assertRaises(ValueError):
+            t('habe', errors='strict')
+
+        self.assertEqual(t('habe', errors='ignore'), 'a b')
+
+    def test_ipa(self):
+        t = Tokenizer()
+        self.assertEqual(t('\u02b0ello', ipa=True), '\u02b0e l l o')
+
     def test_tokenize_with_profile(self):
         self.assertEqual(self.t('aa'), 'b')
 
@@ -101,4 +114,8 @@ class TokenizerTestCase(unittest.TestCase):
 
     def test_find_missing_characters(self):
         result = self.t.find_missing_characters("aa b ch on n - ih x y z")
+        self.assertEqual(result, "aa b ch on n - ih \ufffd \ufffd \ufffd")
+
+        t = Tokenizer(_test_path('test.prf'), errors_replace=lambda c: '?')
+        result = t.find_missing_characters("aa b ch on n - ih x y z")
         self.assertEqual(result, "aa b ch on n - ih ? ? ?")
