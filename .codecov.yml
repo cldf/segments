@@ -1,0 +1,4 @@
+ignore:
+- "segments/context_tokenizer.py"
+- "segments/scripts/context_tokenizer.py"
+
