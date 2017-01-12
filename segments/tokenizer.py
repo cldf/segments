@@ -332,7 +332,6 @@ class Tokenizer(object):
             return self._search_graphemes(string, _missing=missing)
 
         # if the column label for conversion doesn't exist, return grapheme tokenization
-#<<<<<<< HEAD
         if column not in self.op.column_labels:
             raise ValueError("Column {0} not found in profile.".format(column)) 
 
@@ -352,21 +351,6 @@ class Tokenizer(object):
             result.append(' '.join(out))
 
         return separator.join(result).strip()
-#=======
-#        if column not in self.op.column_labels:
-#            return self.graphemes(string)
-#
-#        result = []
-#        for token in self.graphemes(string).split():
-#            # special cases: word breaks and unparsables
-#            # default: transform given the grapheme and column label; skip NULL
-#            target = {'#': '#', '?': '?'}.get(token) or self.op.mappings[token, column]
-#            if target != "NULL":
-#                # result.append(self.mappings[token, column])
-#                result.append(target)
-#
-#        return " ".join(result).strip()
-#>>>>>>> upstream/master
 
     def transform_rules(self, string):
         """
@@ -408,7 +392,6 @@ class Tokenizer(object):
         tokenized string where each character missing from the orthography
         profile is replaced with a question mark <?>.
         """
-#<<<<<<< HEAD
         return " ".join(
             [c if c in self.op else missing for c in char_tokenized_string.split()])
 
@@ -417,9 +400,6 @@ class Tokenizer(object):
         Work in progress method for tokenizing IPA.
         """
         return self.combine_modifiers(self.grapheme_clusters(string))
-#=======
-#        return " ".join(c if c in self.op else "?" for c in char_tokenized_string.split())
-#>>>>>>> upstream/master
 
     def combine_modifiers(self, string):
         """
