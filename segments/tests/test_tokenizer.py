@@ -30,11 +30,15 @@ def test_jipa():
 
 
 class TestProfile(unittest.TestCase):
+    def test_missing_header(self):
+        with self.assertRaises(ValueError):
+            Profile([['a', 'b'], ['a', 'b']])
+
     def test_duplicate_grapheme(self):
         mock_log = Mock()
         with patch('segments.tokenizer.logging', Mock(getLogger=lambda n: mock_log)):
             Profile([['graphemes', 'other'], ['a', 'b'], ['a', 'b']])
-            assert mock_log.warn.called
+            assert mock_log.warn.call_args[0][0].startswith('line 3')
 
 
 class TokenizerTestCase(unittest.TestCase):

@@ -15,6 +15,8 @@ from segments.tree import Tree
 from segments.util import normalized_rows, normalized_string
 from segments import errors
 
+logging.basicConfig()
+
 
 class Profile(object):
     def __init__(self, input_, delimiter='\t'):
@@ -24,15 +26,22 @@ class Profile(object):
         token_list = []
 
         if isinstance(input_, string_types):
-            input_ = normalized_rows(input_, delimiter=delimiter)
+            input_ = normalized_rows(input_, delimiter=delimiter, all_lines=True)
 
         log = logging.getLogger(__name__)
         for i, tokens in enumerate(input_):
+            if tokens is None:
+                continue
+
             # deal with the columns header -- should always start with "graphemes" as per
             # the orthography profiles specification
-            if i == 0 and tokens[0].lower().startswith("graphemes"):
+            if not self.column_labels and tokens[0].lower().startswith("graphemes"):
                 self.column_labels = [token.lower() for token in tokens]
                 continue
+
+            if not self.column_labels:
+                raise ValueError('no column header found in profile')
+
             token_list.append(tokens)
             grapheme = tokens[0]
             # check for duplicates in the orthography profile (fail if dups)
@@ -40,7 +49,7 @@ class Profile(object):
                 self.graphemes.add(grapheme)
             else:
                 log.warn(
-                    'duplicate grapheme in orthography profile: {0}'.format(grapheme))
+                    'line {0}:duplicate grapheme in profile: {1}'.format(i + 1, grapheme))
 
             if len(tokens) > 1:
                 self.mappings.update({
