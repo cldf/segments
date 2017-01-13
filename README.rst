@@ -1,9 +1,12 @@
 ===============================
-tokenize
+segments
 ===============================
 
 .. image:: https://travis-ci.org/bambooforest/segments.png?branch=master
         :target: https://travis-ci.org/bambooforest/segments
+
+.. image:: https://codecov.io/gh/bambooforest/segments/branch/master/graph/badge.svg
+        :target: https://codecov.io/gh/bambooforest/segments
 
 .. image:: https://pypip.in/d/segments/badge.png
         :target: https://crate.io/packages/segments?version=latest

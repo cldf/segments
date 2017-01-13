@@ -5,30 +5,43 @@ import os
 import argparse
 from collections import OrderedDict, Counter
 
+from six import PY2, text_type
+
 from segments.tokenizer import Tokenizer
 from segments import util
 
 
 def _print(args, line):
-    print(line.encode(args.encoding))
+    if PY2:
+        line = line.encode(args.encoding)
+    print(line)
+
+
+def _maybe_decode(s, encoding):
+    if not isinstance(s, text_type):
+        return s.decode(encoding)
+    return s
 
 
 def tokenize(args):
     _print(args, Tokenizer()(args.args[0].decode(args.encoding)))
 
 
-def profile(args):
+def profile(args, stream=sys.stdin):
     """
     Create an orthography profile for a string or text file
 
     segments profile <STRING>|<FILENAME>
     """
+    if not args.args:
+        args.args = [stream.read()]
+
     if os.path.exists(args.args[0]):
         input_ = util.normalized_rows(args.args[0])
     else:
         input_ = [
             util.normalized_string(
-                args.args[0].decode(args.encoding), add_boundaries=False)]
+                _maybe_decode(args.args[0], args.encoding), add_boundaries=False)]
 
     graphemes = Counter()
     for line in input_:
@@ -36,14 +49,14 @@ def profile(args):
 
     _print(args, 'graphemes\tfrequency\tmapping')
     for grapheme, frequency in graphemes.most_common():
-        _print(args, '{0}\t{1}\t'.format(grapheme, frequency))
+        _print(args, '{0}\t{1}\t{0}'.format(grapheme, frequency))
 
 
 class ParserError(Exception):
     pass
 
 
-class ArgumentParser(argparse.ArgumentParser):
+class ArgumentParser(argparse.ArgumentParser):  # pragma: no cover
     """
     An command line argument parser supporting sub-commands in a simple way.
     """
@@ -83,6 +96,6 @@ class ArgumentParser(argparse.ArgumentParser):
         return 0
 
 
-def main():
+def main():  # pragma: no cover
     parser = ArgumentParser(tokenize, profile)
     sys.exit(parser.main())
