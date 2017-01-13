@@ -1,4 +1,6 @@
 from __future__ import unicode_literals, print_function
+import sys
+
 
 class TreeNode(object):
     """
@@ -39,7 +41,6 @@ class Tree(object):
         parse = ""
         curr = 0
         node = root
-        #matches = []
         while curr < len(line):
             node = node.children.get(line[curr])
             curr += 1
@@ -52,38 +53,15 @@ class Tree(object):
                     # the longest-matched (greedy match) graphemes.
                     parse = line[:curr] + " " + subparse
         return parse
-    
-    def _parse2(self, root, data, idx=0):
 
-
-        output = []
-        string = data[-1][1]
-        if len(string) == 0:
-            return ''
-        node = root
-        while idx < len(string):
-            print(output)
-            print(string)
-            node = node.children.get(string[idx])
-            output += [(idx, string[:idx+1])]
-            idx += 1
-            if not node:
-                break
-            if node.sentinel:
-                subparse = self._parse2(root, [(idx, string[idx:])], idx=idx)
-            if subparse:
-                output += subparse
-
-        return output
-
-    def printTree(self, root, path=''):
+    def printTree(self, root, path='', stream=sys.stdout):
         for char, child in root.children.items():
             if child.sentinel:
                 char += "*"
-            branch = (" -- " if len(path) > 0 else "")
-            self.printTree(child, path + branch + char)
+            branch = " -- " if len(path) > 0 else ""
+            self.printTree(child, path + branch + char, stream=stream)
         if not root.children:
-            print(path)
+            print(path, file=stream)
 
 
 def printMultigraphs(root, line, result):
@@ -107,5 +85,5 @@ def printMultigraphs(root, line, result):
     # Print everything up to the last-seen sentinel, and process
     # the rest of the line, while there is any remaining.
     last = last + 1  # End of span (noninclusive).
-    result += line[:last]+" "
+    result += line[:last] + " "
     return printMultigraphs(root, line[last:], result)
