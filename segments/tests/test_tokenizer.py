@@ -60,6 +60,9 @@ class TokenizerTestCase(unittest.TestCase):
 
         self.assertEqual(t('habe', errors='ignore'), 'a b')
 
+    def test_boundaries(self):
+        self.assertEqual(self.t('aa aa', separator=' _ '), 'b _ b')
+
     def test_normalization(self):
         t = Tokenizer()
         s = 'n\u0303a'

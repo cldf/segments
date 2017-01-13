@@ -169,6 +169,7 @@ class Tokenizer(object):
                  column="graphemes",
                  form=None,
                  ipa=False,
+                 separator=' # ',
                  errors='replace'):
         """
         The main task of a Tokenizer is tokenizing! This is what happens when called.
@@ -212,7 +213,7 @@ class Tokenizer(object):
 
         if form:
             res = normalized_string(res, add_boundaries=False, form=form)
-        return res
+        return res.replace(' # ', separator)
 
     def characters(self, string):
         """
