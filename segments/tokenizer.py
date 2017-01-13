@@ -188,6 +188,8 @@ class Tokenizer(object):
             Result of the tokenization.
 
         """
+        if form and form not in ['NFC', 'NFKC', 'NFD', 'NFKD']:
+            raise ValueError('invalid normal form specified')
         if ipa:
             res = self.combine_modifiers(self.grapheme_clusters(string))
         else:

@@ -49,9 +49,19 @@ class TokenizerTestCase(unittest.TestCase):
         self.assertEqual(t('habe'), '<i> a b <e>')
 
         with self.assertRaises(ValueError):
+            t('habe', form='xyz')
+
+        with self.assertRaises(ValueError):
             t('habe', errors='strict')
 
         self.assertEqual(t('habe', errors='ignore'), 'a b')
+
+    def test_normalization(self):
+        t = Tokenizer()
+        s = 'n\u0303a'
+        self.assertEqual(t(s), 'n\u0303 a')
+        self.assertEqual(t('\xf1a'), 'n\u0303 a')
+        self.assertEqual(t(s, form='NFC'), '\xf1 a')
 
     def test_ipa(self):
         t = Tokenizer()
