@@ -40,7 +40,7 @@ def profile(args):
 
     _print(args, 'graphemes\tfrequency\tmapping')
     for grapheme, frequency in graphemes.most_common():
-        _print(args, '{0}\t{1}\t'.format(grapheme, frequency))
+        _print(args, '{0}\t{1}\t{0}'.format(grapheme, frequency))
 
 
 class ParserError(Exception):

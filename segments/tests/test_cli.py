@@ -39,4 +39,4 @@ class Tests(TestCase):
             self.assertTrue(bool(o.split('\n')))
 
         with capture(profile, Mock(args=['abcaba'.encode('utf8')], encoding='utf8')) as o:
-            self.assertIn('a\t3\t', o.split('\n'))
+            self.assertIn('a\t3\ta', o.split('\n'))
