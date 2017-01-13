@@ -30,11 +30,15 @@ def test_jipa():
 
 
 class TestProfile(unittest.TestCase):
+    def test_missing_header(self):
+        with self.assertRaises(ValueError):
+            Profile([['a', 'b'], ['a', 'b']])
+
     def test_duplicate_grapheme(self):
         mock_log = Mock()
         with patch('segments.tokenizer.logging', Mock(getLogger=lambda n: mock_log)):
             Profile([['graphemes', 'other'], ['a', 'b'], ['a', 'b']])
-            assert mock_log.warn.called
+            assert mock_log.warn.call_args[0][0].startswith('line 3')
 
 
 class TokenizerTestCase(unittest.TestCase):
@@ -49,9 +53,22 @@ class TokenizerTestCase(unittest.TestCase):
         self.assertEqual(t('habe'), '<i> a b <e>')
 
         with self.assertRaises(ValueError):
+            t('habe', form='xyz')
+
+        with self.assertRaises(ValueError):
             t('habe', errors='strict')
 
         self.assertEqual(t('habe', errors='ignore'), 'a b')
+
+    def test_boundaries(self):
+        self.assertEqual(self.t('aa aa', separator=' _ '), 'b _ b')
+
+    def test_normalization(self):
+        t = Tokenizer()
+        s = 'n\u0303a'
+        self.assertEqual(t(s), 'n\u0303 a')
+        self.assertEqual(t('\xf1a'), 'n\u0303 a')
+        self.assertEqual(t(s, form='NFC'), '\xf1 a')
 
     def test_ipa(self):
         t = Tokenizer()

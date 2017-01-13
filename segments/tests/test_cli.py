@@ -31,6 +31,11 @@ class Tests(TestCase):
     def test_profile(self):
         from segments.cli import profile
 
+        stream = StringIO('abcd')
+        with capture(profile, Mock(args=[], encoding='utf8'), stream=stream) as o:
+            stream.close()
+            self.assertIn('a\t1\ta', o.split('\n'))
+
         with capture(
             profile,
             Mock(args=[os.path.join(os.path.dirname(__file__), 'test.prf')],
@@ -39,4 +44,4 @@ class Tests(TestCase):
             self.assertTrue(bool(o.split('\n')))
 
         with capture(profile, Mock(args=['abcaba'.encode('utf8')], encoding='utf8')) as o:
-            self.assertIn('a\t3\t', o.split('\n'))
+            self.assertIn('a\t3\ta', o.split('\n'))
