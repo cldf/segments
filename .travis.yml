@@ -8,6 +8,7 @@ email: false
 before_install:
   pip install codecov 
 install:
+- pip install -U setuptools
 - pip install nose
 - pip install mock
 - pip install coverage
