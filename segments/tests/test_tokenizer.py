@@ -32,12 +32,12 @@ def test_jipa():
 class TestProfile(unittest.TestCase):
     def test_missing_header(self):
         with self.assertRaises(ValueError):
-            Profile([['a', 'b'], ['a', 'b']])
+            Profile({})
 
     def test_duplicate_grapheme(self):
         mock_log = Mock()
         with patch('segments.tokenizer.logging', Mock(getLogger=lambda n: mock_log)):
-            Profile([['graphemes', 'other'], ['a', 'b'], ['a', 'b']])
+            Profile({'Grapheme': 'a'}, {'Grapheme': 'a'})
             assert mock_log.warn.call_args[0][0].startswith('line 3')
 
 
@@ -61,7 +61,7 @@ class TokenizerTestCase(unittest.TestCase):
         self.assertEqual(t('habe', errors='ignore'), 'a b')
 
     def test_boundaries(self):
-        self.assertEqual(self.t('aa aa', separator=' _ '), 'b _ b')
+        self.assertEqual(self.t('aa aa', separator=' _ '), ' b _  b')
 
     def test_normalization(self):
         t = Tokenizer()
@@ -75,7 +75,7 @@ class TokenizerTestCase(unittest.TestCase):
         self.assertEqual(t('\u02b0ello', ipa=True), '\u02b0e l l o')
 
     def test_tokenize_with_profile(self):
-        self.assertEqual(self.t('aa'), 'b')
+        self.assertEqual(self.t('aa'), ' b')
 
     def test_tokenize_without_profile(self):
         self.assertEqual(Tokenizer()('aa', form='NFC'), 'a a')
@@ -113,7 +113,7 @@ class TokenizerTestCase(unittest.TestCase):
             self.assertEqual(self.t.transform("aabchonn-ih", 'xx'), "aa b ch on n - ih")
 
     def test_transform2(self):
-        result = self.t.transform("aabchonn-ih", "ipa")
+        result = self.t.transform("aabchonn-ih", "IPA")
         self.assertEqual(result, "aː b tʃ õ n í")
 
     def test_transform3(self):
@@ -123,11 +123,11 @@ class TokenizerTestCase(unittest.TestCase):
     def test_rules(self):
         self.assertEqual(Tokenizer().rules('abc'), 'abc')
         result = self.t.rules("aabchonn-ih")
-        self.assertEqual(result, "ii-ii")
+        self.assertEqual(result, "  ii-ii")
 
     def test_transform_rules(self):
         result = self.t.transform_rules("aabchonn-ih")
-        self.assertEqual(result, "b b ii - ii")
+        self.assertEqual(result, " b b ii - ii")
 
     def test_find_missing_characters(self):
         result = self.t.find_missing_characters("aa b ch on n - ih x y z")

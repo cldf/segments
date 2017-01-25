@@ -6,6 +6,7 @@ import argparse
 from collections import OrderedDict, Counter
 
 from six import PY2, text_type
+from clldutils.path import readlines
 
 from segments.tokenizer import Tokenizer
 from segments import util
@@ -37,7 +38,7 @@ def profile(args, stream=sys.stdin):
         args.args = [stream.read()]
 
     if os.path.exists(args.args[0]):
-        input_ = util.normalized_rows(args.args[0])
+        input_ = readlines(args.args[0], normalize='NFD')
     else:
         input_ = [
             util.normalized_string(
