@@ -4,17 +4,12 @@ from setuptools import setup, find_packages
 
 requires = [
     'regex',
-    'docopt',
     'six',
+    'clldutils>=1.7.3',
 ]
 
 tests_require = [
     'mock',
-]
-
-docs_extras = [
-    'Sphinx',
-    'docutils',
 ]
 
 testing_extras = tests_require + [
@@ -31,7 +26,7 @@ def read(fname):
 
 setup(
     name='segments',
-    version="0.3.0",
+    version="1.0.0",
     description='',
     long_description=read("README.rst"),
     author='Steven Moran',
@@ -55,7 +50,7 @@ setup(
     ],
     packages=find_packages(),
     include_package_data=True,
-    extras_require={'testing': testing_extras, 'docs': docs_extras},
+    extras_require={'testing': testing_extras},
     tests_require=tests_require,
     test_suite="segments.tests",
     entry_points={
