@@ -15,7 +15,7 @@ class TreeNode(object):
 
 
 class Tree(object):
-    def __init__(self, token_list):
+    def __init__(self, graphemes):
         # Internal function to add a multigraph starting at node.
         def addMultigraph(node, line):
             for char in line:
@@ -26,8 +26,8 @@ class Tree(object):
         # Skip "#" comments and blank lines.
         self.root = TreeNode('', sentinel=True)
 
-        for tokens in token_list:
-            addMultigraph(self.root, tokens[0])
+        for grapheme in graphemes:
+            addMultigraph(self.root, grapheme)
 
     def parse(self, line):
         parse = self._parse(self.root, line)

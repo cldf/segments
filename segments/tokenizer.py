@@ -10,62 +10,69 @@ import logging
 
 import regex as re
 from six import string_types
+from clldutils.path import readlines
+from clldutils.dsv import reader
 
 from segments.tree import Tree
-from segments.util import normalized_rows, normalized_string
+from segments.util import normalized_string
 from segments import errors
 
 logging.basicConfig()
 
+GRAPHEME_COL = 'Grapheme'
+
 
 class Profile(object):
-    def __init__(self, input_, delimiter='\t'):
-        self.graphemes = set()
+    def __init__(self, *specs):
+        self.graphemes = []
         self.mappings = {}
         self.column_labels = []
-        token_list = []
-
-        if isinstance(input_, string_types):
-            input_ = normalized_rows(input_, delimiter=delimiter, all_lines=True)
 
         log = logging.getLogger(__name__)
-        for i, tokens in enumerate(input_):
-            if tokens is None:
-                continue
-
-            # deal with the columns header -- should always start with "graphemes" as per
-            # the orthography profiles specification
-            if not self.column_labels and tokens[0].lower().startswith("graphemes"):
-                self.column_labels = [token.lower() for token in tokens]
-                continue
-
+        for i, spec in enumerate(specs):
             if not self.column_labels:
-                raise ValueError('no column header found in profile')
+                self.column_labels = list(spec.keys())
 
-            token_list.append(tokens)
-            grapheme = tokens[0]
+            if 'Grapheme' not in spec:
+                raise ValueError('invalid grapheme specification')
+
+            grapheme = spec[GRAPHEME_COL]
             # check for duplicates in the orthography profile (fail if dups)
             if grapheme not in self.graphemes:
-                self.graphemes.add(grapheme)
+                self.graphemes.append(grapheme)
             else:
                 log.warn(
-                    'line {0}:duplicate grapheme in profile: {1}'.format(i + 1, grapheme))
+                    'line {0}:duplicate grapheme in profile: {1}'.format(i + 2, grapheme))
+            self.mappings.update(
+                {(grapheme, k): v for k, v in spec.items() if k != GRAPHEME_COL})
+        self.tree = Tree(self.graphemes)
 
-            if len(tokens) > 1:
-                self.mappings.update({
-                    (grapheme, label): token for token, label
-                    in zip(tokens, self.column_labels)})
-        self.tree = Tree(token_list)
+    @classmethod
+    def from_file(cls, fname):
+        """
+        Orthography profiles must be
+        - tab-separated CSV files
+        - encoded in UTF-8
+        - with a header containing a column "Grapheme"
+        """
+        return cls(*list(
+            reader(readlines(fname, normalize='NFD'), dicts=True, delimiter='\t')))
 
     def __contains__(self, item):
         return item in self.graphemes
 
 
 class Rules(object):
-    def __init__(self, input_, delimiter=','):
-        if isinstance(input_, string_types):
-            input_ = normalized_rows(input_, delimiter=delimiter)
-        self._rules = [(re.compile(rule), replacement) for rule, replacement in input_]
+    """
+    Rules are given in tuple format, comma delimited.
+    Regular expressions are given in Python syntax.
+    """
+    def __init__(self, *rules):
+        self._rules = [(re.compile(rule), replacement) for rule, replacement in rules]
+
+    @classmethod
+    def from_file(cls, fname):
+        return cls(*list(reader(readlines(fname, comment='#', normalize='NFD'))))
 
     def apply(self, s):
         for rule, replacement in self._rules:
@@ -146,18 +153,16 @@ class Tokenizer(object):
 
     def __init__(self,
                  profile=None,
-                 profile_delimiter='\t',
                  rules=None,
-                 rules_delimiter=',',
                  errors_strict=errors.strict,
                  errors_replace=errors.replace,
                  errors_ignore=errors.ignore):
-        self.op = Profile(profile, profile_delimiter) if profile else None
+        self.op = Profile.from_file(profile) if profile else None
         if not rules and profile and isinstance(profile, string_types):
             _rules = os.path.splitext(profile)[0] + '.rules'
             if os.path.exists(_rules):
                 rules = _rules
-        self._rules = Rules(rules, rules_delimiter) if rules else None
+        self._rules = Rules.from_file(rules) if rules else None
         self._errors = {
             'strict': errors_strict,
             'replace': errors_replace,
@@ -166,7 +171,7 @@ class Tokenizer(object):
 
     def __call__(self,
                  string,
-                 column="graphemes",
+                 column=GRAPHEME_COL,
                  form=None,
                  ipa=False,
                  separator=' # ',
@@ -198,8 +203,6 @@ class Tokenizer(object):
             Result of the tokenization.
 
         """
-        if form and form not in ['NFC', 'NFKC', 'NFD', 'NFKD']:
-            raise ValueError('invalid normal form specified')
         if ipa:
             res = self.combine_modifiers(self.grapheme_clusters(string))
         else:
@@ -303,7 +306,7 @@ class Tokenizer(object):
 
     def transform(self,
                   string,
-                  column="graphemes",
+                  column=GRAPHEME_COL,
                   errors='replace',
                   exception=None,
                   separator=' # '):
@@ -334,8 +337,7 @@ class Tokenizer(object):
             raise ValueError(
                 "This method only works when an orthography profile is specified.")
 
-        column = column.lower()
-        if column == "graphemes":
+        if column == GRAPHEME_COL:
             return self.graphemes(string, errors=errors)
 
         # if the column label for conversion doesn't exist, return grapheme tokenization
