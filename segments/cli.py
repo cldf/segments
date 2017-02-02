@@ -44,7 +44,7 @@ def profile(args):
     segments profile [STRING]
     """
     graphemes = Counter(Tokenizer.grapheme_pattern.findall(_get_input(args)))
-    _print(args, 'Grapheme\tfrequency\tmapping')
+    _print(args, 'Grapheme\tfrequency\t{0}'.format(args.mapping or 'mapping'))
     for grapheme, frequency in graphemes.most_common():
         _print(args, '{0}\t{1}\t{0}'.format(grapheme, frequency))
 
