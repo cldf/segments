@@ -65,7 +65,7 @@ API
 
 ```python
 >>> from __future__ import unicode_literals, print_function
->>> from segments.tokenizer import Profile, Tokenizer
+>>> from segments import Profile, Tokenizer
 >>> t = Tokenizer()
 >>> t('abcd')
 'a b c d'

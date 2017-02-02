@@ -1,7 +1,6 @@
 # coding: utf8
 from __future__ import unicode_literals, print_function, division
 import sys
-from collections import Counter
 
 from six import PY2, text_type
 from clldutils.path import Path
@@ -11,14 +10,14 @@ from segments.tokenizer import Tokenizer, Profile
 from segments import util
 
 
-def _print(args, line):
+def _write(args, line):
     line = '%s' % line
     if PY2:
         line = line.encode(args.encoding)
     print(line)
 
 
-def _get_input(args):
+def _read(args):
     string = args.args[0] if args.args else sys.stdin.read()
     if not isinstance(string, text_type):
         string = string.decode(args.encoding)
@@ -34,7 +33,7 @@ def tokenize(args):
     """
     if args.profile and not Path(args.profile).exists():  # pragma: no cover
         raise ParserError('--profile must be a path for an existing file')
-    _print(args, Tokenizer(profile=args.profile)(_get_input(args), column=args.mapping))
+    _write(args, Tokenizer(profile=args.profile)(_read(args), column=args.mapping))
 
 
 @command()
@@ -44,7 +43,7 @@ def profile(args):
 
     segments profile [STRING]
     """
-    _print(args, Profile.from_text(_get_input(args)))
+    _write(args, Profile.from_text(_read(args)))
 
 
 def main():  # pragma: no cover
