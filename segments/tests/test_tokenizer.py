@@ -40,6 +40,11 @@ class TestProfile(unittest.TestCase):
             Profile({'Grapheme': 'a'}, {'Grapheme': 'a'})
             assert mock_log.warn.call_args[0][0].startswith('line 3')
 
+    def test_from_textfile(self):
+        self.assertIn(
+            'Grapheme\t',
+            '%s' % Profile.from_textfile(_test_path('Kabiye_input.txt')))
+
 
 class TokenizerTestCase(unittest.TestCase):
     """ Tests for tokenizer.py """
@@ -76,6 +81,10 @@ class TokenizerTestCase(unittest.TestCase):
 
     def test_tokenize_with_profile(self):
         self.assertEqual(self.t('aa'), ' b')
+
+    def test_tokenize_with_profile_from_object(self):
+        prf = Profile(dict(Grapheme='aa', mapping='xy'), dict(Grapheme='b', mapping='z'))
+        self.assertEqual(Tokenizer(profile=prf)('aab', column='mapping'), 'xy z')
 
     def test_tokenize_without_profile(self):
         self.assertEqual(Tokenizer()('aa', form='NFC'), 'a a')

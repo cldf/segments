@@ -59,3 +59,24 @@ $ cat text.txt | segments --mapping=mapping --profile=profile.prf tokenize
 a ä x ö x ü x
 ```
 
+
+API
+---
+
+```python
+>>> from __future__ import unicode_literals, print_function
+>>> from segments.tokenizer import Profile, Tokenizer
+>>> t = Tokenizer()
+>>> t('abcd')
+'a b c d'
+>>> prf = Profile({'Grapheme': 'ab', 'mapping': 'x'}, {'Grapheme': 'cd', 'mapping': 'y'})
+>>> print(prf)
+mapping	Grapheme
+ab	x
+cd	y
+>>> t = Tokenizer(profile=prf)
+>>> t('abcd')
+'ab cd'
+>>> t('abcd', column='mapping')
+'x y'
+```

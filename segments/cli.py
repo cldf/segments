@@ -7,11 +7,12 @@ from six import PY2, text_type
 from clldutils.path import Path
 from clldutils.clilib import ArgumentParser, command, ParserError
 
-from segments.tokenizer import Tokenizer
+from segments.tokenizer import Tokenizer, Profile
 from segments import util
 
 
 def _print(args, line):
+    line = '%s' % line
     if PY2:
         line = line.encode(args.encoding)
     print(line)
@@ -43,10 +44,7 @@ def profile(args):
 
     segments profile [STRING]
     """
-    graphemes = Counter(Tokenizer.grapheme_pattern.findall(_get_input(args)))
-    _print(args, 'Grapheme\tfrequency\t{0}'.format(args.mapping or 'mapping'))
-    for grapheme, frequency in graphemes.most_common():
-        _print(args, '{0}\t{1}\t{0}'.format(grapheme, frequency))
+    _print(args, Profile.from_text(_get_input(args)))
 
 
 def main():  # pragma: no cover
