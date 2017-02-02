@@ -1,12 +1,11 @@
 # coding: utf8
 from __future__ import unicode_literals, print_function, division
 import sys
-import os
-import argparse
-from collections import OrderedDict, Counter
+from collections import Counter
 
 from six import PY2, text_type
-from clldutils.path import readlines
+from clldutils.path import Path
+from clldutils.clilib import ArgumentParser, command, ParserError
 
 from segments.tokenizer import Tokenizer
 from segments import util
@@ -18,85 +17,42 @@ def _print(args, line):
     print(line)
 
 
-def _maybe_decode(s, encoding):
-    if not isinstance(s, text_type):
-        return s.decode(encoding)
-    return s
+def _get_input(args):
+    string = args.args[0] if args.args else sys.stdin.read()
+    if not isinstance(string, text_type):
+        string = string.decode(args.encoding)
+    return util.normalized_string(string.strip(), add_boundaries=False)
 
 
+@command()
 def tokenize(args):
-    _print(args, Tokenizer()(args.args[0].decode(args.encoding)))
-
-
-def profile(args, stream=sys.stdin):
     """
-    Create an orthography profile for a string or text file
+    Tokenize a string (passed as argument or read from stdin)
 
-    segments profile <STRING>|<FILENAME>
+    segments [--profile=PATH/TO/PROFILE] tokenize [STRING]
     """
-    if not args.args:
-        args.args = [stream.read()]
+    if args.profile and not Path(args.profile).exists():  # pragma: no cover
+        raise ParserError('--profile must be a path for an existing file')
+    _print(args, Tokenizer(profile=args.profile)(_get_input(args), column=args.mapping))
 
-    if os.path.exists(args.args[0]):
-        input_ = readlines(args.args[0], normalize='NFD')
-    else:
-        input_ = [
-            util.normalized_string(
-                _maybe_decode(args.args[0], args.encoding), add_boundaries=False)]
 
-    graphemes = Counter()
-    for line in input_:
-        graphemes.update(Tokenizer.grapheme_pattern.findall(line))
+@command()
+def profile(args):
+    """
+    Create an orthography profile for a string (passed as argument or read from stdin)
 
-    _print(args, 'graphemes\tfrequency\tmapping')
+    segments profile [STRING]
+    """
+    graphemes = Counter(Tokenizer.grapheme_pattern.findall(_get_input(args)))
+    _print(args, 'Grapheme\tfrequency\tmapping')
     for grapheme, frequency in graphemes.most_common():
         _print(args, '{0}\t{1}\t{0}'.format(grapheme, frequency))
 
 
-class ParserError(Exception):
-    pass
-
-
-class ArgumentParser(argparse.ArgumentParser):  # pragma: no cover
-    """
-    An command line argument parser supporting sub-commands in a simple way.
-    """
-    def __init__(self, *commands, **kw):
-        kw.setdefault(
-            'description', "Main command line interface of the segments package.")
-        kw.setdefault(
-            'epilog', "Use '%(prog)s help <cmd>' to get help about individual commands.")
-        argparse.ArgumentParser.__init__(self, **kw)
-        self.commands = OrderedDict([(cmd.__name__, cmd) for cmd in commands])
-        self.add_argument("--encoding", default="utf8")
-        self.add_argument('command', help='|'.join(self.commands.keys()))
-        self.add_argument('args', nargs=argparse.REMAINDER)
-
-    def main(self, args=None, catch_all=False):
-        args = self.parse_args(args=args)
-        if args.command == 'help':
-            # As help text for individual commands we simply re-use the docstrings of the
-            # callables registered for the command:
-            print(self.commands[args.args[0]].__doc__)
-        else:
-            if args.command not in self.commands:
-                print('invalid command')
-                self.print_help()
-                return 64
-            try:
-                self.commands[args.command](args)
-            except ParserError as e:
-                print(e)
-                print(self.commands[args.command].__doc__)
-                return 64
-            except Exception as e:
-                if catch_all:
-                    print(e)
-                    return 1
-                raise
-        return 0
-
-
 def main():  # pragma: no cover
-    parser = ArgumentParser(tokenize, profile)
+    parser = ArgumentParser('segments')
+    parser.add_argument("--encoding", help='input encoding', default="utf8")
+    parser.add_argument("--profile", help='path to an orthography profile', default=None)
+    parser.add_argument(
+        "--mapping", help='column name in ortho profile to map graphemes', default=None)
     sys.exit(parser.main())
