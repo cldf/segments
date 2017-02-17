@@ -7,11 +7,13 @@ from __future__ import unicode_literals, division, absolute_import, print_functi
 import os
 import unicodedata
 import logging
+from collections import Counter, OrderedDict
 
 import regex as re
 from six import string_types
 from clldutils.path import readlines
 from clldutils.dsv import reader
+from clldutils.misc import UnicodeMixin
 
 from segments.tree import Tree
 from segments.util import normalized_string
@@ -22,7 +24,7 @@ logging.basicConfig()
 GRAPHEME_COL = 'Grapheme'
 
 
-class Profile(object):
+class Profile(UnicodeMixin):
     def __init__(self, *specs):
         self.graphemes = []
         self.mappings = {}
@@ -57,6 +59,30 @@ class Profile(object):
         """
         return cls(*list(
             reader(readlines(fname, normalize='NFD'), dicts=True, delimiter='\t')))
+
+    @classmethod
+    def from_text(cls, text, mapping='mapping'):
+        graphemes = Counter(Tokenizer.grapheme_pattern.findall(text))
+        specs = [
+            OrderedDict([
+                (GRAPHEME_COL, grapheme),
+                ('frequency', frequency),
+                (mapping, grapheme)])
+            for grapheme, frequency in graphemes.most_common()]
+        return cls(*specs)
+
+    @classmethod
+    def from_textfile(cls, fname, mapping='mapping'):
+        return cls.from_text(' '.join(readlines(fname)), mapping=mapping)
+
+    def __unicode__(self):
+        rows = [self.column_labels]
+        for grapheme in self.graphemes:
+            rows.append(
+                [grapheme] +
+                ['%s' % self.mappings[grapheme, col]
+                 for col in self.column_labels if col != GRAPHEME_COL])
+        return '\n'.join('\t'.join(row) for row in rows)
 
     def __contains__(self, item):
         return item in self.graphemes
@@ -157,7 +183,11 @@ class Tokenizer(object):
                  errors_strict=errors.strict,
                  errors_replace=errors.replace,
                  errors_ignore=errors.ignore):
-        self.op = Profile.from_file(profile) if profile else None
+        self.op = None
+        if isinstance(profile, Profile):
+            self.op = profile
+        elif profile is not None:
+            self.op = Profile.from_file(profile)
         if not rules and profile and isinstance(profile, string_types):
             _rules = os.path.splitext(profile)[0] + '.rules'
             if os.path.exists(_rules):
