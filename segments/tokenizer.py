@@ -58,7 +58,8 @@ class Profile(UnicodeMixin):
         - with a header containing a column "Grapheme"
         """
         return cls(*list(
-            reader(readlines(fname, normalize='NFD'), dicts=True, delimiter='\t')))
+            reader(readlines(fname, normalize='NFD'), dicts=True,
+                delimiter='\t', quotechar=None)))
 
     @classmethod
     def from_text(cls, text, mapping='mapping'):
@@ -170,9 +171,9 @@ class Tokenizer(object):
     In an orthography rules file, rules are given in order in regular
     expressions, e.g. this rule replaces a vowel followed by an <n>
     followed by <space> followed by a second vowel with first vowel
-    <space> <n> <space> second vowel, e.g.:
+    <space> <n> <space> second vowel, e.g.::
 
-    $ ([a|á|e|é|i|í|o|ó|u|ú])(n)(\s)([a|á|e|é|i|í|o|ó|u|ú]), \1 \2 \4
+        $ ([a|á|e|é|i|í|o|ó|u|ú])(n)(\s)([a|á|e|é|i|í|o|ó|u|ú]), \1 \2 \4
 
     """
     grapheme_pattern = re.compile("\X", re.UNICODE)
