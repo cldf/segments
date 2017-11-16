@@ -496,4 +496,3 @@ class Tokenizer(object):
                 r.append(segments[i])
                 i += 1
         return " ".join(r)
-
