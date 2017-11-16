@@ -36,7 +36,6 @@ git push --tags
 - Make sure your system Python has ``setuptools-git`` installed and release to PyPI:
 ```
 git checkout tags/v$1
-python setup.py sdist
-python setup.py bdist_wheel
+python setup.py sdist bdist_wheel
 twine upload dist/*
 ```

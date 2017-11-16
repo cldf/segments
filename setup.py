@@ -49,7 +49,7 @@ setup(
     include_package_data=True,
     entry_points={
         'console_scripts': [
-            "segments = segments.cli:main",
+            "segments = segments.__main__:main",
         ]
     },
 )

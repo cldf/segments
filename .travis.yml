@@ -8,7 +8,6 @@ cache: pip
 before_cache:
   - rm -f $HOME/.cache/pip/log/debug.log
 install:
-  - pip install -U setuptools
   - pip install -e .[test]
 script:
   - pytest --cov segments --cov-report=term-missing
