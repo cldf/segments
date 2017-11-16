@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
 import os
-import codecs
+import io
 
 from six import StringIO
 import pytest
@@ -15,7 +15,7 @@ def _test_path(fname):
 
 
 def _test_data(fname):
-    with codecs.open(_test_path(fname), "r", "utf-8") as fp:
+    with io.open(_test_path(fname), mode="r", encoding="utf-8") as fp:
         return fp.read()
 
 
@@ -43,10 +43,9 @@ def test_missing_header():
 
 
 def test_duplicate_grapheme(mocker):
-    mock_log = mocker.Mock()
-    mocker.patch('segments.tokenizer.logging', mocker.Mock(getLogger=lambda n: mock_log))
+    logging = mocker.patch('segments.tokenizer.logging')
     Profile({'Grapheme': 'a'}, {'Grapheme': 'a'})
-    assert mock_log.warn.call_args[0][0].startswith('line 3')
+    assert logging.getLogger.return_value.warn.call_args[0][0].startswith('line 3')
 
 
 def test_from_textfile():
@@ -98,7 +97,7 @@ def test_printTree(tokenizer_with_profile):
     tokenizer_with_profile.op.tree.printTree(
         tokenizer_with_profile.op.tree.root, stream=stream)
     stream.seek(0)
-    assert 'a* -- a*' in stream.read().split('\n')
+    assert 'a* -- a*' in stream.read().splitlines()
     printMultigraphs(tokenizer_with_profile.op.tree.root, '', '')
     printMultigraphs(tokenizer_with_profile.op.tree.root, 'abcd', '')
 
