@@ -9,7 +9,7 @@ def read(fname):
 
 setup(
     name='segments',
-    version="1.1.0",
+    version="1.1.1",
     description='',
     long_description=read("README.rst"),
     author='Steven Moran and Robert Forkel',
