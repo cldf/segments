@@ -29,7 +29,7 @@ setup(
     version="1.1.0",
     description='',
     long_description=read("README.rst"),
-    author='Steven Moran',
+    author='Steven Moran and Robert Forkel',
     author_email='steven.moran@uzh.ch',
     url='https://github.com/bambooforest/segments',
     install_requires=requires,
