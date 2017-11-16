@@ -1,0 +1,20 @@
+[run]
+branch = True
+source = segments
+
+[paths]
+source =
+    src/segments
+    .tox/*/lib/python*/site-packages/segments
+
+[report]
+exclude_lines =
+    if self.debug:
+    pragma: no cover
+    raise NotImplementedError
+    if __name__ == .__main__.:
+ignore_errors = True
+omit =
+    tests/*
+show_missing = True
+
