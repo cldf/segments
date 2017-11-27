@@ -1,20 +1,19 @@
 language: python
 python:
-- 2.7
-- 3.4
-notifications:
-email: false
-
-before_install:
-  pip install codecov 
+  - 2.7
+  - 3.4
+  - 3.5
+  - 3.6
+cache: pip
+before_cache:
+  - rm -f $HOME/.cache/pip/log/debug.log
 install:
-- pip install -U setuptools
-- pip install nose
-- pip install mock
-- pip install coverage
+  - pip install -e .[test]
 script:
-- python setup.py install
-- nosetests --with-coverage --cover-package=segments --logging-level=INFO
-
+  - pytest --cov segments --cov-report=term-missing
+before_install:
+  pip install codecov
 after_success:
-- codecov
+  - tox -e coverage-report
+  - codecov
+

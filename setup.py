@@ -1,21 +1,4 @@
-# -*- coding: utf-8 -*-
 from setuptools import setup, find_packages
-
-
-requires = [
-    'regex',
-    'six',
-    'clldutils>=1.7.3',
-]
-
-tests_require = [
-    'mock',
-]
-
-testing_extras = tests_require + [
-    'nose',
-    'coverage',
-]
 
 
 def read(fname):
@@ -26,20 +9,33 @@ def read(fname):
 
 setup(
     name='segments',
-    version="1.1.0",
+    version="1.1.1",
     description='',
     long_description=read("README.rst"),
     author='Steven Moran and Robert Forkel',
     author_email='steven.moran@uzh.ch',
-    url='https://github.com/bambooforest/segments',
-    install_requires=requires,
-    license=read("LICENSE"),
+    url='https://github.com/cldf/segments',
+    install_requires=[
+        'regex',
+        'six',
+        'clldutils>=1.7.3',
+    ],
+    extras_require={
+        'dev': ['flake8', 'wheel', 'twine'],
+        'test': [
+            'pytest>=3.1',
+            'pytest-mock',
+            'mock',
+            'pytest-cov',
+        ],
+    },
+    license='Apache 2.0',
     zip_safe=False,
     keywords='tokenizer',
     classifiers=[
-        'Development Status :: 2 - Pre-Alpha',
+        'Development Status :: 4 - Beta',
         'Intended Audience :: Developers',
-        'License :: OSI Approved :: MIT License',
+        'License :: OSI Approved :: Apache Software License',
         'Natural Language :: English',
         "Programming Language :: Python :: 2",
         'Programming Language :: Python :: 2.7',
@@ -48,14 +44,12 @@ setup(
         'Programming Language :: Python :: Implementation :: CPython',
         'Programming Language :: Python :: Implementation :: PyPy'
     ],
-    packages=find_packages(),
+    packages=find_packages(where="src"),
+    package_dir={"": "src"},
     include_package_data=True,
-    extras_require={'testing': testing_extras},
-    tests_require=tests_require,
-    test_suite="segments.tests",
     entry_points={
         'console_scripts': [
-            "segments = segments.cli:main",
+            "segments = segments.__main__:main",
         ]
     },
 )
