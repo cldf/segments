@@ -141,7 +141,7 @@ class Tokenizer(object):
 
     For example, an orthography profile might specify that in source X
     <uu> is a single grapheme (Unicode parlance: tailored grapheme) and
-    thererfore it should be chunked as so. Given an orthography profile and
+    therefore it should be chunked as so. Given an orthography profile and
     some data to tokenize, the process would look like this:
 
     input string example: uubo uubo
@@ -162,7 +162,7 @@ class Tokenizer(object):
     profile. A dictionary is created that keeps a mapping between source-specific
     graphemes and their counterparts (e.g. an IPA column in the orthography profile).
 
-    Lastly, the Tokenizer can be used to transformation as specified in an
+    Lastly, the Tokenizer can be used to transform text as specified in an
     orthography rules file. These transformations are specified in a separate
     file from the orthography profile (that specifics the document specific graphemes,
     and possibly their IPA counterparts) and the orthography rules should
@@ -268,7 +268,7 @@ class Tokenizer(object):
 
         Notes
         -----
-        Input is first normalized according to Normalization Ford D(ecomposition).
+        Input is first normalized according to Normalization For D(ecomposition).
         String returned contains "#" to mark word boundaries.
         """
         return ' '.join(char for char in normalized_string(string))
@@ -295,7 +295,7 @@ class Tokenizer(object):
 
         Notes
         -----
-        Input is first normalized according to Normalization Ford D(ecomposition).
+        Input is first normalized according to Normalization For D(ecomposition).
         """
         # init the regex Unicode grapheme cluster match
         return ' '.join(self.grapheme_pattern.findall(normalized_string(string)))
@@ -313,7 +313,7 @@ class Tokenizer(object):
         Returns
         -------
         result : str
-            The result of the tokenized and QLC formatted str.
+            The result of the tokenized and formatted str.
 
         """
         # if no orthography profile is specified, simply return
@@ -421,7 +421,7 @@ class Tokenizer(object):
 
         result = self._rules.apply(normalized_string(string, add_boundaries=False))
 
-        # this is in case someone introduces a non-NFD ordered sequence of characters
+        # in case someone introduces a non-NFD ordered sequence of characters
         # in the orthography profile
         return normalized_string(result, add_boundaries=False)
 
