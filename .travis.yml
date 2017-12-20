@@ -12,7 +12,7 @@ install:
 script:
   - pytest --cov segments --cov-report=term-missing
 before_install:
-  pip install codecov
+  pip install codecov tox
 after_success:
   - tox -e coverage-report
   - codecov
