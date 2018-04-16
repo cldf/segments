@@ -327,9 +327,13 @@ class Tokenizer(object):
 
             # case where the parsing fails
             if not parse:
-                # replace characters in string but not in orthography profile with <?>
-                parse = " " + self.find_missing_characters(
-                    self.characters(word), errors=errors)
+                # see rationale at https://github.com/cldf/segments/issues/27
+                graphemes = sorted(self.op.graphemes, key=len, reverse=True)
+                graphemes = [re.escape(gr) for gr in graphemes]
+                rule = '|'.join(graphemes + ['.'])
+                tok = [gr if gr in graphemes else '�' for gr in re.findall(rule, word)]
+                parse = '# %s #' % ' '.join(tok)
+
             parses.append(parse)
 
         # remove the outer word boundaries
