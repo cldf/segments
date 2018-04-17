@@ -16,7 +16,7 @@ from clldutils.dsv import reader
 from clldutils.misc import UnicodeMixin
 
 from segments.tree import Tree
-from segments.util import normalized_string
+from segments.util import nfd
 from segments import errors
 
 logging.basicConfig()
@@ -63,7 +63,7 @@ class Profile(UnicodeMixin):
 
     @classmethod
     def from_text(cls, text, mapping='mapping'):
-        graphemes = Counter(Tokenizer.grapheme_pattern.findall(text))
+        graphemes = Counter(Tokenizer.grapheme_pattern.findall(nfd(text)))
         specs = [
             OrderedDict([
                 (GRAPHEME_COL, grapheme),
@@ -84,9 +84,6 @@ class Profile(UnicodeMixin):
                 ['%s' % self.mappings[grapheme, col]
                  for col in self.column_labels if col != GRAPHEME_COL])
         return '\n'.join('\t'.join(row) for row in rows)
-
-    def __contains__(self, item):
-        return item in self.graphemes
 
 
 class Rules(object):
@@ -117,10 +114,10 @@ class Tokenizer(object):
     Parameters
     ----------
 
-    orthography_profile : string (default = None)
+    profile : string (default = None)
         Filename of the a document source-specific orthography profile and rules file.
 
-    orthography_profile_rules : string (default = None)
+    rules : string (default = None)
         Filename of the a document source-specific orthography profile rules file.
 
     Notes
@@ -135,7 +132,7 @@ class Tokenizer(object):
     unigram models (segments and their counts) from input data.
 
     The Tokenizer reads in an orthography profile and calls a helper
-    class to build a trie data structure, which stores the possible Unicode
+    class to build a tree data structure, which stores the possible Unicode
     character combinations that are specified in the orthography profile
     (i.e. tailored grapheme clusters) that appear in the data source.
 
@@ -173,7 +170,7 @@ class Tokenizer(object):
     followed by <space> followed by a second vowel with first vowel
     <space> <n> <space> second vowel, e.g.::
 
-        $ ([a|á|e|é|i|í|o|ó|u|ú])(n)(\s)([a|á|e|é|i|í|o|ó|u|ú]), \1 \2 \4
+        $ (a|á|e|é|i|í|o|ó|u|ú)(n)(\s)(a|á|e|é|i|í|o|ó|u|ú), \1 \2 \4
 
     """
     grapheme_pattern = re.compile("\X", re.UNICODE)
@@ -205,6 +202,7 @@ class Tokenizer(object):
                  column=GRAPHEME_COL,
                  form=None,
                  ipa=False,
+                 segment_separator=' ',
                  separator=' # ',
                  errors='replace'):
         """
@@ -234,178 +232,92 @@ class Tokenizer(object):
             Result of the tokenization.
 
         """
-        if ipa:
-            res = self.combine_modifiers(self.grapheme_clusters(string))
-        else:
-            if self.op:
-                res = self.transform(string, column, errors=errors)
+        res = []
+        for word in nfd(string).split():
+            if ipa:
+                res.append(self.combine_modifiers(self.grapheme_clusters(word)))
             else:
-                res = self.grapheme_clusters(string)
+                if self.op:
+                    res.append(
+                        self.transform(word, column=column, error=self._errors[errors]))
+                else:
+                    res.append(self.grapheme_clusters(word))
 
-        if self._rules:
-            res = self.rules(res)
+        def pp(word):
+            res = segment_separator.join(word).strip()
+            res = self._rules.apply(res) if self._rules else res
+            return unicodedata.normalize(form, res) if form else res
 
-        if form:
-            res = normalized_string(res, add_boundaries=False, form=form)
-        return res.replace(' # ', separator)
+        return separator.join(pp(word) for word in res)
 
-    def characters(self, string):
-        """
-        Given a string as input, return a space-delimited string of Unicode characters
-        (code points rendered as glyphs).
-
-        Parameters
-        ----------
-        string : str
-            A Unicode string to be tokenized into graphemes.
-
-        Returns
-        -------
-        result : str
-            String returned is space-delimited on Unicode characters and contains "#" to
-            mark word boundaries.
-            The string is in NFD.
-
-        Notes
-        -----
-        Input is first normalized according to Normalization For D(ecomposition).
-        String returned contains "#" to mark word boundaries.
-        """
-        return ' '.join(char for char in normalized_string(string))
-
-    def grapheme_clusters(self, string):
+    def grapheme_clusters(self, word):
         """
         See: Unicode Standard Annex #29: UNICODE TEXT SEGMENTATION
         http://www.unicode.org/reports/tr29/
 
-        Given a string as input, return a space-delimited string of Unicode graphemes
-        using the "\X" regular expression.
+        Given a string as input, return a list of Unicode graphemes using the
+        "\X" regular expression.
 
         Parameters
         ----------
-        string : str
+        word : str
             A Unicode string to be tokenized into graphemes.
 
         Returns
         -------
-        result : str
-            String returned is space-delimited on Unicode graphemes and contains "#" to
-            mark word boundaries.
-            The string is in NFD.
+        result : list
+            List of Unicode graphemes in NFD.
 
-        Notes
-        -----
-        Input is first normalized according to Normalization For D(ecomposition).
         """
         # init the regex Unicode grapheme cluster match
-        return ' '.join(self.grapheme_pattern.findall(normalized_string(string)))
+        return self.grapheme_pattern.findall(word)
 
-    def graphemes(self, string, errors='replace'):
-        """
-        Tokenizes strings given an orthograhy profile that specifies graphemes in a source
-        doculect.
-
-        Parameters
-        ----------
-        string : str
-            The str to be tokenized and formatted.
-
-        Returns
-        -------
-        result : str
-            The result of the tokenized and formatted str.
-
-        """
-        # if no orthography profile is specified, simply return
-        # Unicode grapheme clusters, regex pattern "\X"
-        if not self.op:
-            return self.grapheme_clusters(string)
-
-        parses = []
-        for word in normalized_string(string, add_boundaries=False).split():
-            parse = self.op.tree.parse(word)
-
-            # case where the parsing fails
-            if not parse:
-                # replace characters in string but not in orthography profile with <?>
-                parse = " " + self.find_missing_characters(
-                    self.characters(word), errors=errors)
-            parses.append(parse)
-
-        # remove the outer word boundaries
-        return "".join(parses).replace("##", "#").rstrip("#").lstrip("#").strip()
-
-    def transform(self,
-                  string,
-                  column=GRAPHEME_COL,
-                  errors='replace',
-                  exception=None,
-                  separator=' # '):
+    def transform(self, word, column=GRAPHEME_COL, error=errors.replace):
         """
         Transform a string's graphemes into the mappings given in a different column
-        in the orthography profile. By default this function returns an orthography
-        profile grapheme tokenized string.
+        in the orthography profile.
 
         Parameters
         ----------
-        string : str
+        word : str
             The input string to be tokenized.
 
-        conversion : str (default = "graphemes")
+        column : str (default = "Grapheme")
             The label of the column to transform to. Default it to tokenize with
             orthography profile.
 
         Returns
         -------
-        result : str
+        result : list of lists
             Result of the transformation.
 
         """
-        exception = exception or {"#": "#", "?": "?"}
+        assert self.op, 'method can only be called with orthography profile.'
 
-        # This method can't be called unless an orthography profile was specified.
-        if not self.op:
-            raise ValueError(
-                "This method only works when an orthography profile is specified.")
-
-        if column == GRAPHEME_COL:
-            return self.graphemes(string, errors=errors)
-
-        # if the column label for conversion doesn't exist, return grapheme tokenization
         if column not in self.op.column_labels:
             raise ValueError("Column {0} not found in profile.".format(column))
 
-        result = []
-        # convert string to raw string to allow for parsing of backslashes
-        for part in string.split(' '):
-            out = []
-            for token in self.graphemes(r'' + part, errors=errors).split(' '):
-                target = (
-                    exception.get(token) or
-                    self.op.mappings.get((token, column)) or
-                    self._errors['replace'](token))
-                if target != "NULL":
-                    # result.append(self.mappings[token, column])
-                    out.append(target)
-            result.append(' '.join(out))
+        word = self.op.tree.parse(word, error)
+        if column == GRAPHEME_COL:
+            return word
+        out = []
+        for token in word:
+            target = (
+                self.op.mappings.get((token, column)) or
+                self._errors['replace'](token))
+            if target != "NULL":
+                # result.append(self.mappings[token, column])
+                out.append(target)
+        return out
 
-        return separator.join(result).strip()
-
-    def transform_rules(self, string):
-        """
-        Convenience function that first tokenizes a string into orthographic profile-
-        specified graphemes and then applies the orthography profile rules.
-        """
-        return self.rules(self.transform(string))
-
-    def rules(self, string):
+    def rules(self, word):
         """
         Function to tokenize input string and return output of str with ortho rules
         applied.
 
         Parameters
         ----------
-        string : str
+        word : str
             The input string to be tokenized.
 
         Returns
@@ -414,28 +326,9 @@ class Tokenizer(object):
             Result of the orthography rules applied to the input str.
 
         """
-        # if no orthography profile rules file has been specified, simply return the
-        # string
-        if not self._rules:
-            return string
+        return self._rules.apply(word) if self._rules else word
 
-        result = self._rules.apply(normalized_string(string, add_boundaries=False))
-
-        # in case someone introduces a non-NFD ordered sequence of characters
-        # in the orthography profile
-        return normalized_string(result, add_boundaries=False)
-
-    def find_missing_characters(self, char_tokenized_string, errors='replace'):
-        """
-        Given a string tokenized into characters, return a characters
-        tokenized string where each character missing from the orthography
-        profile is replaced with a question mark <?>.
-        """
-        error = self._errors[errors]
-        return " ".join(
-            [c if c in self.op else error(c) for c in char_tokenized_string.split()])
-
-    def combine_modifiers(self, string):
+    def combine_modifiers(self, graphemes):
         """
         Given a string that is space-delimited on Unicode grapheme clusters,
         group Unicode modifier letters with their preceding base characters,
@@ -449,7 +342,6 @@ class Tokenizer(object):
 
         """
         result = []
-        graphemes = string.split()
         temp = ""
         count = len(graphemes)
         for grapheme in reversed(graphemes):
@@ -495,4 +387,4 @@ class Tokenizer(object):
             else:
                 r.append(segments[i])
                 i += 1
-        return " ".join(r)
+        return r

@@ -1,5 +1,6 @@
 from __future__ import unicode_literals, print_function
-import sys
+
+from segments.errors import replace
 
 
 class TreeNode(object):
@@ -16,74 +17,54 @@ class TreeNode(object):
 
 class Tree(object):
     def __init__(self, graphemes):
-        # Internal function to add a multigraph starting at node.
-        def addMultigraph(node, line):
+        def _multigraph(node, line):
+            # Internal function to add a multigraph starting at node.
             for char in line:
                 node = node.children.setdefault(char, TreeNode(char))
             node.sentinel = True
 
-        # Add all multigraphs in each line of file_name.
-        # Skip "#" comments and blank lines.
         self.root = TreeNode('', sentinel=True)
-
         for grapheme in graphemes:
-            addMultigraph(self.root, grapheme)
+            _multigraph(self.root, grapheme)
 
-    def parse(self, line):
-        parse = self._parse(self.root, line)
-        return "# " + parse if parse else ""
+    def parse(self, line, error=replace):
+        res, idx = self._parse(self.root, line, 0)
+        rem = line[idx:]
+        while rem:
+            # Chop off one character and try parsing the remainder:
+            res.append(error(rem[0]))
+            rem = rem[1:]
+            r, i = self._parse(self.root, rem, 0)
+            res.extend(r)
+            rem = rem[i:]
+        return res
 
-    def _parse(self, root, line, idx=0):
+    def _parse(self, root, line, idx):
+        """
+        :param root: Tree node.
+        :param line: String to parse.
+        :param idx: Global counter of characters parsed.
+        :return: (list of parsed graphemes, incremented character count)
+        """
         # Base (or degenerate..) case.
         if len(line) == 0:
-            return "#"
+            return [], idx
 
-        parse = ""
+        parse = []
         curr = 0
         node = root
+        cidx = idx
         while curr < len(line):
             node = node.children.get(line[curr])
             curr += 1
             if not node:
                 break
             if node.sentinel:
-                subparse = self._parse(root, line[curr:], idx=curr)
-                if len(subparse) > 0:
-                    # Always keep the latest valid parse, which will be
-                    # the longest-matched (greedy match) graphemes.
-                    parse = line[:curr] + " " + subparse
-        return parse
-
-    def printTree(self, root, path='', stream=sys.stdout):
-        for char, child in root.children.items():
-            if child.sentinel:
-                char += "*"
-            branch = " -- " if len(path) > 0 else ""
-            self.printTree(child, path + branch + char, stream=stream)
-        if not root.children:
-            print(path, file=stream)
-
-
-def printMultigraphs(root, line, result):
-    # Base (or degenerate..) case.
-    if len(line) == 0:
-        result += "#"
-        return result
-
-    # Walk until we run out of either nodes or characters.
-    curr = 0   # Current index in line.
-    last = 0   # Index of last character of last-seen multigraph.
-    node = root
-    while curr < len(line):
-        node = node.children.get(line[curr])
-        if not node:
-            break
-        if node.sentinel:
-            last = curr
-        curr += 1
-
-    # Print everything up to the last-seen sentinel, and process
-    # the rest of the line, while there is any remaining.
-    last = last + 1  # End of span (noninclusive).
-    result += line[:last] + " "
-    return printMultigraphs(root, line[last:], result)
+                subparse, cidx = self._parse(root, line[curr:], idx + curr)
+                # Always keep the latest valid parse, which will be
+                # the longest-matched (greedy match) graphemes.
+                parse = [line[:curr]]
+                parse.extend(subparse)
+        if parse:
+            idx = cidx
+        return parse, idx

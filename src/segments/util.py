@@ -1,8 +1,7 @@
-from __future__ import print_function
+# coding: utf-8
+from __future__ import unicode_literals
+from functools import partial
 import unicodedata
 
-
-def normalized_string(string, add_boundaries=True, form='NFD'):
-    if add_boundaries:
-        string = string.replace(" ", "#")
-    return unicodedata.normalize(form, string)
+REPLACEMENT_MARKER = '�'
+nfd = partial(unicodedata.normalize, 'NFD')
