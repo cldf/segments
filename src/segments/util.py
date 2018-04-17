@@ -4,4 +4,5 @@ from functools import partial
 import unicodedata
 
 REPLACEMENT_MARKER = '�'
+NULL = "NULL"
 nfd = partial(unicodedata.normalize, 'NFD')

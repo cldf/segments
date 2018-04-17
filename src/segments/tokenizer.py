@@ -16,7 +16,7 @@ from clldutils.dsv import reader
 from clldutils.misc import UnicodeMixin
 
 from segments.tree import Tree
-from segments.util import nfd
+from segments.util import nfd, NULL
 from segments import errors
 
 logging.basicConfig()
@@ -305,8 +305,9 @@ class Tokenizer(object):
             target = (
                 self.op.mappings.get((token, column)) or
                 self._errors['replace'](token))
-            if target != "NULL":
-                # result.append(self.mappings[token, column])
+            if target != NULL:
+                # FIXME: should compare against respective column description in the
+                # profile metadata!
                 out.append(target)
         return out
 
