@@ -21,7 +21,7 @@ def _read(args):
     string = args.args[0] if args.args else sys.stdin.read()
     if not isinstance(string, text_type):
         string = string.decode(args.encoding)
-    return util.normalized_string(string.strip(), add_boundaries=False)
+    return util.nfd(string.strip())
 
 
 @command()

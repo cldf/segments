@@ -5,6 +5,8 @@ Default implementations for error handlers
 from __future__ import unicode_literals, print_function, division
 import logging
 
+from segments.util import REPLACEMENT_MARKER
+
 log = logging.getLogger(__name__)
 
 
@@ -15,7 +17,7 @@ def strict(c):
 
 def replace(c):
     log.debug('replacing grapheme: {0}'.format(c))
-    return '\ufffd'
+    return REPLACEMENT_MARKER
 
 
 def ignore(c):

@@ -3,11 +3,9 @@ from __future__ import unicode_literals
 import os
 import io
 
-from six import StringIO
 import pytest
 
-from segments.tokenizer import Tokenizer, Profile, GRAPHEME_COL
-from segments.tree import printMultigraphs
+from segments.tokenizer import Tokenizer, Profile, GRAPHEME_COL, Rules
 
 
 def _test_path(fname):
@@ -48,6 +46,28 @@ def test_duplicate_grapheme(mocker):
     assert logging.getLogger.return_value.warn.call_args[0][0].startswith('line 3')
 
 
+def test_profile():
+    prf = Profile(
+        {'Grapheme': 'bischen', 'Out': 'b i s ch e n'},
+        {'Grapheme': 'sch', 'Out': 'sch'},
+        {'Grapheme': 'n', 'Out': 'n'},
+        {'Grapheme': 'a', 'Out': 'a'},
+        {'Grapheme': 'e', 'Out': 'e'},
+        {'Grapheme': 'n', 'Out': 'n'},
+    )
+    t = Tokenizer(profile=prf)
+    assert t('bischen', column='Out') == 'b i s ch e n'
+    assert t('naschen', column='Out') == 'n a sch e n'
+
+    prf = Profile(
+        {'Grapheme': 'uu'},
+        {'Grapheme': 'b'},
+        {'Grapheme': 'o'},
+    )
+    t = Tokenizer(profile=prf)
+    assert t('uubo uubo') == 'uu b o # uu b o'
+
+
 def test_from_textfile():
     assert 'Grapheme\t' in '%s' % Profile.from_textfile(_test_path('Kabiye_input.txt'))
 
@@ -76,7 +96,9 @@ def test_boundaries(tokenizer_with_profile):
         ('\xf1a', dict(), 'n\u0303 a'),
         ('n\u0303a', dict(form='NFC'), '\xf1 a'),
         ('\u02b0ello', dict(ipa=True), '\u02b0e l l o'),
-        ('aa', dict(form='NFC'), 'a a')
+        ('aa', dict(form='NFC'), 'a a'),
+        ("ĉháɾã̌ctʼɛ↗ʐː| k͡p", {}, "ĉ h á ɾ ã̌ c t ʼ ɛ ↗ ʐ ː | # k͡ p"),
+        ("aabchonn-ih", {}, "a a b c h o n n - i h"),
     ]
 )
 def test_tokenize(tokenizer, text, kw, result):
@@ -85,40 +107,18 @@ def test_tokenize(tokenizer, text, kw, result):
 
 def test_tokenize_with_profile(tokenizer_with_profile):
     assert tokenizer_with_profile('aa') == ' b'
+    assert tokenizer_with_profile("aabchonn-ih") == " b b ii - ii"
 
 
 def test_tokenize_with_profile_from_object():
-    prf = Profile(dict(Grapheme='aa', mapping='xy'), dict(Grapheme='b', mapping='z'))
-    assert Tokenizer(profile=prf)('aab', column='mapping') == 'xy z'
-
-
-def test_printTree(tokenizer_with_profile):
-    stream = StringIO()
-    tokenizer_with_profile.op.tree.printTree(
-        tokenizer_with_profile.op.tree.root, stream=stream)
-    stream.seek(0)
-    assert 'a* -- a*' in stream.read().splitlines()
-    printMultigraphs(tokenizer_with_profile.op.tree.root, '', '')
-    printMultigraphs(tokenizer_with_profile.op.tree.root, 'abcd', '')
-
-
-def test_characters(tokenizer):
-    assert tokenizer.characters(
-        "ĉháɾã̌ctʼɛ↗ʐː| k͡p") == "c ̂ h a ́ ɾ a ̃ ̌ c t ʼ ɛ ↗ ʐ ː | # k ͡ p"
-
-
-def test_grapheme_clusters(tokenizer):
-    result = tokenizer.grapheme_clusters("ĉháɾã̌ctʼɛ↗ʐː| k͡p")
-    assert result == "ĉ h á ɾ ã̌ c t ʼ ɛ ↗ ʐ ː | # k͡ p"
-
-
-def test_graphemes(tokenizer, tokenizer_with_profile):
-    assert tokenizer.graphemes("aabchonn-ih") == "a a b c h o n n - i h"
-    assert tokenizer_with_profile.graphemes("aabchonn-ih") == "aa b ch on n - ih"
+    prf = Profile(
+        dict(Grapheme='aa', mapping=['x', 'y']),
+        dict(Grapheme='b', mapping='z'))
+    assert Tokenizer(profile=prf)('aab', column='mapping') == 'x y z'
 
 
 def test_transform_errors(tokenizer_with_profile, tokenizer):
-    with pytest.raises(ValueError):
+    with pytest.raises(AssertionError):
         tokenizer.transform('abc')
 
     with pytest.raises(ValueError):
@@ -134,7 +134,8 @@ def test_transform_errors(tokenizer_with_profile, tokenizer):
     ]
 )
 def test_transform(tokenizer_with_profile, text, column, result):
-    assert tokenizer_with_profile.transform(text, column=column) == result
+    tokenizer_with_profile._rules = None
+    assert tokenizer_with_profile(text, column=column) == result
 
 
 def test_rules(tokenizer_with_profile, tokenizer):
@@ -142,16 +143,5 @@ def test_rules(tokenizer_with_profile, tokenizer):
     assert tokenizer_with_profile.rules("aabchonn-ih") == "  ii-ii"
     assert Tokenizer(profile=_test_path('profile_without_rules.prf')).rules('aa') != \
         tokenizer_with_profile.rules('aa')
-
-
-def test_transform_rules(tokenizer_with_profile):
-    assert tokenizer_with_profile.transform_rules("aabchonn-ih") == " b b ii - ii"
-
-
-def test_find_missing_characters(tokenizer_with_profile):
-    result = tokenizer_with_profile.find_missing_characters("aa b ch on n - ih x y z")
-    assert result == "aa b ch on n - ih \ufffd \ufffd \ufffd"
-
-    t = Tokenizer(_test_path('test.prf'), errors_replace=lambda c: '?')
-    result = t.find_missing_characters("aa b ch on n - ih x y z")
-    assert result == "aa b ch on n - ih ? ? ?"
+    rules = Rules((r'(a|á|e|é|i|í|o|ó|u|ú)(n)(\s)(a|á|e|é|i|í|o|ó|u|ú)', r'\1 \2 \4'))
+    assert rules.apply('tan ab') == 'ta n ab'
