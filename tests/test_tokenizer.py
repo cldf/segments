@@ -111,8 +111,10 @@ def test_tokenize_with_profile(tokenizer_with_profile):
 
 
 def test_tokenize_with_profile_from_object():
-    prf = Profile(dict(Grapheme='aa', mapping='xy'), dict(Grapheme='b', mapping='z'))
-    assert Tokenizer(profile=prf)('aab', column='mapping') == 'xy z'
+    prf = Profile(
+        dict(Grapheme='aa', mapping=['x', 'y']),
+        dict(Grapheme='b', mapping='z'))
+    assert Tokenizer(profile=prf)('aab', column='mapping') == 'x y z'
 
 
 def test_transform_errors(tokenizer_with_profile, tokenizer):

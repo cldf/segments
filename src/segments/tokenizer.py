@@ -308,7 +308,10 @@ class Tokenizer(object):
             if target != NULL:
                 # FIXME: should compare against respective column description in the
                 # profile metadata!
-                out.append(target)
+                if isinstance(target, (tuple, list)):
+                    out.extend(target)
+                else:
+                    out.append(target)
         return out
 
     def rules(self, word):
