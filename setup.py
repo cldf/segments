@@ -1,17 +1,11 @@
 from setuptools import setup, find_packages
 
 
-def read(fname):
-    with open(fname) as fp:
-        content = fp.read()
-    return content
-
-
 setup(
     name='segments',
-    version="1.1.1",
+    version="1.2.0",
     description='',
-    long_description=read("README.md"),
+    long_description=open("README.md")read(),
     long_description_content_type="text/markdown",
     author='Steven Moran and Robert Forkel',
     author_email='steven.moran@uzh.ch',
