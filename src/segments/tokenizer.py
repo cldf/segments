@@ -77,7 +77,8 @@ class Profile(UnicodeMixin):
         return cls.from_text(' '.join(readlines(fname)), mapping=mapping)
 
     def __unicode__(self):
-        rows = [self.column_labels]
+        rows = [[GRAPHEME_COL] + ['%s' % col for col in self.column_labels
+                                  if col != GRAPHEME_COL]]
         for grapheme in self.graphemes:
             rows.append(
                 [grapheme] +
