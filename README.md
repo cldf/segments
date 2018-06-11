@@ -73,7 +73,7 @@ API
 'a b c d'
 >>> prf = Profile({'Grapheme': 'ab', 'mapping': 'x'}, {'Grapheme': 'cd', 'mapping': 'y'})
 >>> print(prf)
-mapping	Grapheme
+Grapheme	mapping
 ab	x
 cd	y
 >>> t = Tokenizer(profile=prf)
