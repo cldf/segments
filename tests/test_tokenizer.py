@@ -35,6 +35,10 @@ def test_jipa(lang):
         _test_data(lang + '_input.txt'), ipa=True) == _test_data(lang + '_output.txt')
 
 
+def test_characters():
+    assert Tokenizer().characters("ĉháɾã̌ctʼɛ↗ʐː| k͡p") == "c ̂ h a ́ ɾ a ̃ ̌ c t ʼ ɛ ↗ ʐ ː | # k ͡ p"
+
+
 def test_missing_header():
     with pytest.raises(ValueError):
         Profile({})
