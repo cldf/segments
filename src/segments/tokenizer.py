@@ -251,7 +251,7 @@ class Tokenizer(object):
 
         return separator.join(pp(word) for word in res)
 
-    def characters(self, string):
+    def characters(self, string, segment_separator=' ', separator=' # ',):
         """
         Given a string as input, return a space-delimited string of Unicode characters
         (code points rendered as glyphs).
@@ -270,7 +270,7 @@ class Tokenizer(object):
         Input is first normalized according to Normalization Ford D(ecomposition).
         String returned contains "#" to mark word boundaries.
         """
-        return ' # '.join(' '.join(word) for word in nfd(string).split())
+        return separator.join(segment_separator.join(word) for word in nfd(string).split())
 
     def grapheme_clusters(self, word):
         """

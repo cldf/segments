@@ -36,7 +36,9 @@ def test_jipa(lang):
 
 
 def test_characters():
-    assert Tokenizer().characters("ĉháɾã̌ctʼɛ↗ʐː| k͡p") == "c ̂ h a ́ ɾ a ̃ ̌ c t ʼ ɛ ↗ ʐ ː | # k ͡ p"
+    t = Tokenizer()
+    assert t.characters("ĉháɾã̌ctʼɛ↗ʐː| k͡p") == "c ̂ h a ́ ɾ a ̃ ̌ c t ʼ ɛ ↗ ʐ ː | # k ͡ p"
+    assert t.characters('abc def', segment_separator='_', separator='|') == 'a_b_c|d_e_f'
 
 
 def test_missing_header():
