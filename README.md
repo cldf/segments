@@ -3,7 +3,7 @@ segments
 
 [![Build Status](https://travis-ci.org/cldf/segments.svg?branch=master)](https://travis-ci.org/cldf/segments)
 [![codecov](https://codecov.io/gh/cldf/segments/branch/master/graph/badge.svg)](https://codecov.io/gh/cldf/segments)
-[![PyPI](https://img.shields.io/pypi/v/segments.svg)](https://pypi.python.org/pypi/segments)
+[![PyPI](https://img.shields.io/pypi/v/segments.svg)](https://pypi.org/project/segments)
 
 
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.1051158.svg)](https://doi.org/10.5281/zenodo.1051158)
