@@ -6,13 +6,12 @@ from six import PY2, text_type
 from clldutils.path import Path
 from clldutils.clilib import ArgumentParser, command, ParserError
 
-from segments.tokenizer import Tokenizer, Profile, GRAPHEME_COL
-from segments import util
+from segments import Tokenizer, Profile
 
 
 def _write(args, line):
     line = '%s' % line
-    if PY2:
+    if PY2:  # pragma: no cover
         line = line.encode(args.encoding)
     print(line)
 
@@ -21,7 +20,7 @@ def _read(args):
     string = args.args[0] if args.args else sys.stdin.read()
     if not isinstance(string, text_type):
         string = string.decode(args.encoding)
-    return util.nfd(string.strip())
+    return string.strip()
 
 
 @command()
@@ -53,7 +52,7 @@ def main():  # pragma: no cover
     parser.add_argument(
         "--mapping",
         help='column name in ortho profile to map graphemes',
-        default=GRAPHEME_COL)
+        default=Profile.GRAPHEME_COL)
     sys.exit(parser.main())
 
 

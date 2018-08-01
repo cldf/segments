@@ -1,0 +1,20 @@
+{
+  "dc:language": "abcd1234",
+  "dc:author": "The Author",
+  "dc:format": "OrthographyProfile",
+  "tables": [
+    {
+      "url": "profile.csv",
+      "dialect": {
+        "header": true,
+        "encoding": "utf-8"
+      },
+      "tableSchema": {
+        "columns": [
+          {"name": "Grapheme"},
+          {"name": "IPA", "null": "NA"},
+          {"name": "XSAMPA", "null": "NA"}]
+      }
+    }
+  ]
+}

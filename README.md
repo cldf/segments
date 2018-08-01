@@ -8,7 +8,9 @@ segments
 
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.1051158.svg)](https://doi.org/10.5281/zenodo.1051158)
 
-The segments package provides Unicode Standard tokenization routines and orthography profile segmentation.
+The segments package provides Unicode Standard tokenization routines and orthography segmentation,
+implementing the linear algorithm described in the orthography profile specification from 
+*The Unicode Cookbook* (Moran and Cysouw 2018 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.1296780.svg)](https://doi.org/10.5281/zenodo.1296780)).
 
 
 Command line usage

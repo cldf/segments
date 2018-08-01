@@ -4,87 +4,18 @@ Tokenizer of Unicode characters, grapheme clusters and tailored grapheme cluster
 (of orthographies) given an orthography profile.
 """
 from __future__ import unicode_literals, division, absolute_import, print_function
-import os
 import unicodedata
 import logging
-from collections import Counter, OrderedDict
 
-import regex as re
-from six import string_types
+import regex
+from csvw.dsv import reader
 from clldutils.path import readlines
-from clldutils.dsv import reader
-from clldutils.misc import UnicodeMixin
 
-from segments.tree import Tree
-from segments.util import nfd, NULL
+from segments.util import nfd, grapheme_pattern
 from segments import errors
+from segments.profile import Profile
 
 logging.basicConfig()
-
-GRAPHEME_COL = 'Grapheme'
-
-
-class Profile(UnicodeMixin):
-    def __init__(self, *specs):
-        self.graphemes = []
-        self.mappings = {}
-        self.column_labels = []
-
-        log = logging.getLogger(__name__)
-        for i, spec in enumerate(specs):
-            if not self.column_labels:
-                self.column_labels = list(spec.keys())
-
-            if 'Grapheme' not in spec:
-                raise ValueError('invalid grapheme specification')
-
-            grapheme = spec[GRAPHEME_COL]
-            # check for duplicates in the orthography profile (fail if dups)
-            if grapheme not in self.graphemes:
-                self.graphemes.append(grapheme)
-            else:
-                log.warn(
-                    'line {0}:duplicate grapheme in profile: {1}'.format(i + 2, grapheme))
-            self.mappings.update(
-                {(grapheme, k): v for k, v in spec.items() if k != GRAPHEME_COL})
-        self.tree = Tree(self.graphemes)
-
-    @classmethod
-    def from_file(cls, fname):
-        """
-        Orthography profiles must be
-        - tab-separated CSV files
-        - encoded in UTF-8
-        - with a header containing a column "Grapheme"
-        """
-        return cls(*list(
-            reader(readlines(fname, normalize='NFD'), dicts=True,
-                delimiter='\t', quotechar=None)))
-
-    @classmethod
-    def from_text(cls, text, mapping='mapping'):
-        graphemes = Counter(Tokenizer.grapheme_pattern.findall(nfd(text)))
-        specs = [
-            OrderedDict([
-                (GRAPHEME_COL, grapheme),
-                ('frequency', frequency),
-                (mapping, grapheme)])
-            for grapheme, frequency in graphemes.most_common()]
-        return cls(*specs)
-
-    @classmethod
-    def from_textfile(cls, fname, mapping='mapping'):
-        return cls.from_text(' '.join(readlines(fname)), mapping=mapping)
-
-    def __unicode__(self):
-        rows = [[GRAPHEME_COL] + ['%s' % col for col in self.column_labels
-                                  if col != GRAPHEME_COL]]
-        for grapheme in self.graphemes:
-            rows.append(
-                [grapheme] +
-                ['%s' % self.mappings[grapheme, col]
-                 for col in self.column_labels if col != GRAPHEME_COL])
-        return '\n'.join('\t'.join(row) for row in rows)
 
 
 class Rules(object):
@@ -93,7 +24,7 @@ class Rules(object):
     Regular expressions are given in Python syntax.
     """
     def __init__(self, *rules):
-        self._rules = [(re.compile(rule), replacement) for rule, replacement in rules]
+        self._rules = [(regex.compile(rule), replacement) for rule, replacement in rules]
 
     @classmethod
     def from_file(cls, fname):
@@ -115,11 +46,11 @@ class Tokenizer(object):
     Parameters
     ----------
 
-    profile : string (default = None)
-        Filename of the a document source-specific orthography profile and rules file.
+    profile : string or pathlib.Path or Profile instance (default = None)
+        Specifies an orthography profile to use.
 
     rules : string (default = None)
-        Filename of the a document source-specific orthography profile rules file.
+        Filename of a rules file.
 
     Notes
     -----
@@ -132,7 +63,7 @@ class Tokenizer(object):
     the Tokenizer is meant to do basic rudimentary parsing for things like generating
     unigram models (segments and their counts) from input data.
 
-    The Tokenizer reads in an orthography profile and calls a helper
+    When a profile is passed, the Tokenizer reads the orthography profile and calls a helper
     class to build a tree data structure, which stores the possible Unicode
     character combinations that are specified in the orthography profile
     (i.e. tailored grapheme clusters) that appear in the data source.
@@ -144,6 +75,11 @@ class Tokenizer(object):
 
     input string example: uubo uubo
     output string example: uu b o # uu b o
+
+    >>> prf = Profile({'Grapheme': 'uu'}, {'Grapheme': 'b'}, {'Grapheme': 'o'})
+    >>> t = Tokenizer(profile=prf)
+    >>> t('uubo uubo')
+    'uu b o # uu b o'
 
     See also the test orthography profile and rules in the test directory.
 
@@ -166,7 +102,7 @@ class Tokenizer(object):
     and possibly their IPA counterparts) and the orthography rules should
     be applied to the output of a grapheme tokenization.
 
-    In an orthography rules file, rules are given in order in regular
+    In an orthography rules file, rules are given in order as regular
     expressions, e.g. this rule replaces a vowel followed by an <n>
     followed by <space> followed by a second vowel with first vowel
     <space> <n> <space> second vowel, e.g.::
@@ -174,8 +110,6 @@ class Tokenizer(object):
         $ (a|á|e|é|i|í|o|ó|u|ú)(n)(\s)(a|á|e|é|i|í|o|ó|u|ú), \1 \2 \4
 
     """
-    grapheme_pattern = re.compile("\X", re.UNICODE)
-
     def __init__(self,
                  profile=None,
                  rules=None,
@@ -187,9 +121,9 @@ class Tokenizer(object):
             self.op = profile
         elif profile is not None:
             self.op = Profile.from_file(profile)
-        if not rules and profile and isinstance(profile, string_types):
-            _rules = os.path.splitext(profile)[0] + '.rules'
-            if os.path.exists(_rules):
+        if not rules and self.op and self.op.fname:
+            _rules = self.op.fname.parent / (self.op.fname.stem + '.rules')
+            if _rules.exists():
                 rules = _rules
         self._rules = Rules.from_file(rules) if rules else None
         self._errors = {
@@ -200,7 +134,7 @@ class Tokenizer(object):
 
     def __call__(self,
                  string,
-                 column=GRAPHEME_COL,
+                 column=Profile.GRAPHEME_COL,
                  form=None,
                  ipa=False,
                  segment_separator=' ',
@@ -210,7 +144,7 @@ class Tokenizer(object):
         The main task of a Tokenizer is tokenizing! This is what happens when called.
 
         This function determines what to do given any combination
-        of orthography profiles and rules or not orthography profiles
+        of orthography profile and rules or not orthography profile
         or rules.
 
         Parameters
@@ -234,15 +168,15 @@ class Tokenizer(object):
 
         """
         res = []
-        for word in nfd(string).split():
+        for word in string.split():
             if ipa:
-                res.append(self.combine_modifiers(self.grapheme_clusters(word)))
+                res.append(self.combine_modifiers(self.grapheme_clusters(nfd(word))))
             else:
                 if self.op:
                     res.append(
                         self.transform(word, column=column, error=self._errors[errors]))
                 else:
-                    res.append(self.grapheme_clusters(word))
+                    res.append(self.grapheme_clusters(nfd(word)))
 
         def pp(word):
             res = segment_separator.join(word).strip()
@@ -292,9 +226,9 @@ class Tokenizer(object):
 
         """
         # init the regex Unicode grapheme cluster match
-        return self.grapheme_pattern.findall(word)
+        return grapheme_pattern.findall(word)
 
-    def transform(self, word, column=GRAPHEME_COL, error=errors.replace):
+    def transform(self, word, column=Profile.GRAPHEME_COL, error=errors.replace):
         """
         Transform a string's graphemes into the mappings given in a different column
         in the orthography profile.
@@ -316,20 +250,19 @@ class Tokenizer(object):
         """
         assert self.op, 'method can only be called with orthography profile.'
 
-        if column not in self.op.column_labels:
+        if column != Profile.GRAPHEME_COL and column not in self.op.column_labels:
             raise ValueError("Column {0} not found in profile.".format(column))
 
         word = self.op.tree.parse(word, error)
-        if column == GRAPHEME_COL:
+        if column == Profile.GRAPHEME_COL:
             return word
         out = []
         for token in word:
-            target = (
-                self.op.mappings.get((token, column)) or
-                self._errors['replace'](token))
-            if target != NULL:
-                # FIXME: should compare against respective column description in the
-                # profile metadata!
+            try:
+                target = self.op.graphemes[token][column]
+            except KeyError:
+                target = self._errors['replace'](token)
+            if target is not None:
                 if isinstance(target, (tuple, list)):
                     out.extend(target)
                 else:
