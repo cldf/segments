@@ -3,7 +3,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='segments',
-    version="1.2.3.dev0",
+    version="2.0.0",
     description='',
     long_description=open("README.md").read(),
     long_description_content_type="text/markdown",
