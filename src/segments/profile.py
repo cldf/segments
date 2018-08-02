@@ -70,8 +70,10 @@ class Profile(UnicodeMixin):
                 raise ValueError('invalid grapheme specification')
 
             if self.form:
-                spec = {unicodedata.normalize(self.form, k): unicodedata.normalize(self.form, v)
-                        for k, v in spec.items()}
+                spec = {
+                    unicodedata.normalize(self.form, k):
+                        None if v is None else unicodedata.normalize(self.form, v)
+                    for k, v in spec.items()}
 
             grapheme = spec.pop(self.GRAPHEME_COL)
             if not grapheme:

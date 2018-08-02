@@ -40,7 +40,7 @@ def test_Profile_from_file(profile_path):
 
 
 def test_Profile_from_metadata(testdata):
-    res = Profile.from_file(testdata / 'profile.json')
+    res = Profile.from_file(testdata / 'profile.json', form='NFD')
     assert 'ch' in res.graphemes
     assert res.graphemes['ch']['XSAMPA'] == 'tS'
     assert res.graphemes['-']['XSAMPA'] is None
