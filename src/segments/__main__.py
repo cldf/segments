@@ -6,7 +6,7 @@ from six import PY2, text_type
 from clldutils.path import Path
 from clldutils.clilib import ArgumentParser, command, ParserError
 
-from segments.tokenizer import Tokenizer, Profile
+from segments.tokenizer import Tokenizer, Profile, GRAPHEME_COL
 from segments import util
 
 
@@ -21,7 +21,7 @@ def _read(args):
     string = args.args[0] if args.args else sys.stdin.read()
     if not isinstance(string, text_type):
         string = string.decode(args.encoding)
-    return util.normalized_string(string.strip(), add_boundaries=False)
+    return util.nfd(string.strip())
 
 
 @command()
@@ -51,5 +51,11 @@ def main():  # pragma: no cover
     parser.add_argument("--encoding", help='input encoding', default="utf8")
     parser.add_argument("--profile", help='path to an orthography profile', default=None)
     parser.add_argument(
-        "--mapping", help='column name in ortho profile to map graphemes', default=None)
+        "--mapping",
+        help='column name in ortho profile to map graphemes',
+        default=GRAPHEME_COL)
     sys.exit(parser.main())
+
+
+if __name__ == '__main__':  # pragma: no cover
+    main()

@@ -1,5 +1,0 @@
-nose
-coverage
-mock
-pep8
-tox
