@@ -228,7 +228,7 @@ class Tokenizer(object):
         # init the regex Unicode grapheme cluster match
         return grapheme_pattern.findall(word)
 
-    def transform(self, word, column=Profile.GRAPHEME_COL, error=errors.replace):
+    def transform(self, word, column=Profile.GRAPHEME_COL, errors=errors.replace):
         """
         Transform a string's graphemes into the mappings given in a different column
         in the orthography profile.
@@ -253,7 +253,7 @@ class Tokenizer(object):
         if column != Profile.GRAPHEME_COL and column not in self.op.column_labels:
             raise ValueError("Column {0} not found in profile.".format(column))
 
-        word = self.op.tree.parse(word, error)
+        word = self.op.tree.parse(word, errors)
         if column == Profile.GRAPHEME_COL:
             return word
         out = []
@@ -261,7 +261,7 @@ class Tokenizer(object):
             try:
                 target = self.op.graphemes[token][column]
             except KeyError:
-                target = self._errors['replace'](token)
+                target = token
             if target is not None:
                 if isinstance(target, (tuple, list)):
                     out.extend(target)
