@@ -16,6 +16,8 @@ flake8 src
   - `setup.py`
   - `src/segments/__init__.py`
 
+- Update `CHANGES.md`
+
 - Create the release commit:
 ```shell
 git commit -a -m "release <VERSION>"

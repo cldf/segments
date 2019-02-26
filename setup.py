@@ -3,7 +3,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='segments',
-    version="1.2.3.dev0",
+    version="2.0.2.dev0",
     description='',
     long_description=open("README.md").read(),
     long_description_content_type="text/markdown",
@@ -13,6 +13,7 @@ setup(
     install_requires=[
         'regex',
         'six',
+        'csvw',
         'clldutils>=1.7.3',
     ],
     extras_require={

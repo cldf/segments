@@ -1,25 +1,20 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
-import os
-import io
+import unicodedata
 
 import pytest
 
-from segments.tokenizer import Tokenizer, Profile, GRAPHEME_COL, Rules
+from segments import Tokenizer, Profile, Rules, REPLACEMENT_MARKER
 
 
-def _test_path(fname):
-    return os.path.join(os.path.dirname(__file__), 'data', fname)
-
-
-def _test_data(fname):
-    with io.open(_test_path(fname), mode="r", encoding="utf-8") as fp:
+def _read_data(fname):
+    with fname.open(encoding="utf-8") as fp:
         return fp.read()
 
 
 @pytest.fixture
-def tokenizer_with_profile():
-    return Tokenizer(_test_path('test.prf'))
+def tokenizer_with_profile(profile_path):
+    return Tokenizer(profile_path)
 
 
 @pytest.fixture
@@ -29,27 +24,16 @@ def tokenizer():
 
 @pytest.mark.parametrize(
     "lang", ['Kabiye', 'Brazilian_Portuguese', 'Vietnamese', 'Zurich_German'])
-def test_jipa(lang):
+def test_jipa(lang, testdata):
     tokenize = Tokenizer()
-    assert tokenize(
-        _test_data(lang + '_input.txt'), ipa=True) == _test_data(lang + '_output.txt')
+    assert tokenize(_read_data(testdata / (lang + '_input.txt')), ipa=True) ==\
+        _read_data(testdata / (lang + '_output.txt'))
 
 
 def test_characters():
     t = Tokenizer()
     assert t.characters("ĉháɾã̌ctʼɛ↗ʐː| k͡p") == "c ̂ h a ́ ɾ a ̃ ̌ c t ʼ ɛ ↗ ʐ ː | # k ͡ p"
     assert t.characters('abc def', segment_separator='_', separator='|') == 'a_b_c|d_e_f'
-
-
-def test_missing_header():
-    with pytest.raises(ValueError):
-        Profile({})
-
-
-def test_duplicate_grapheme(mocker):
-    logging = mocker.patch('segments.tokenizer.logging')
-    Profile({'Grapheme': 'a'}, {'Grapheme': 'a'})
-    assert logging.getLogger.return_value.warn.call_args[0][0].startswith('line 3')
 
 
 def test_profile():
@@ -64,6 +48,7 @@ def test_profile():
     t = Tokenizer(profile=prf)
     assert t('bischen', column='Out') == 'b i s ch e n'
     assert t('naschen', column='Out') == 'n a sch e n'
+    assert t('x', column='Out') == REPLACEMENT_MARKER
 
     prf = Profile(
         {'Grapheme': 'uu'},
@@ -74,12 +59,27 @@ def test_profile():
     assert t('uubo uubo') == 'uu b o # uu b o'
 
 
-def test_from_textfile():
-    assert 'Grapheme\t' in '%s' % Profile.from_textfile(_test_path('Kabiye_input.txt'))
+def test_normalization():
+    specs = [
+        {'Grapheme': 'ä'},
+        {'Grapheme': 'aa'},
+        {'Grapheme': 'a'},
+    ]
+    prf = Profile(*specs, **{'form': 'NFD'})
+    t = Tokenizer(profile=prf)
+    # "aa" matches, because the "ä" is decomposed:
+    assert t(unicodedata.normalize('NFD', 'aä')) == 'aa ' + REPLACEMENT_MARKER
+    # A composed "ä" doesn't match anymore:
+    assert t(unicodedata.normalize('NFC', 'aä')) == 'a ' + REPLACEMENT_MARKER
+    prf = Profile(*specs, **{'form': 'NFC'})
+    t = Tokenizer(profile=prf)
+    # "aa" doesn't match here, this is typically the behaviour one wants:
+    assert t(unicodedata.normalize('NFC', 'aä')) == 'a ä'
+    assert t(unicodedata.normalize('NFD', 'aä')) == 'aa ' + REPLACEMENT_MARKER
 
 
-def test_errors():
-    t = Tokenizer(_test_path('test.prf'), errors_replace=lambda c: '<{0}>'.format(c))
+def test_errors(profile_path):
+    t = Tokenizer(profile_path, errors_replace=lambda c: '<{0}>'.format(c))
     assert t('habe') == '<i> a b <e>'
 
     with pytest.raises(ValueError):
@@ -134,7 +134,7 @@ def test_transform_errors(tokenizer_with_profile, tokenizer):
 @pytest.mark.parametrize(
     "text,column,result",
     [
-        ("aabchonn-ih", GRAPHEME_COL, "aa b ch on n - ih"),
+        ("aabchonn-ih", Profile.GRAPHEME_COL, "aa b ch on n - ih"),
         ("aabchonn-ih", "IPA", "aː b tʃ õ n í"),
         ("aabchonn-ih", "XSAMPA", "a: b tS o~ n i_H"),
     ]
@@ -144,10 +144,10 @@ def test_transform(tokenizer_with_profile, text, column, result):
     assert tokenizer_with_profile(text, column=column) == result
 
 
-def test_rules(tokenizer_with_profile, tokenizer):
+def test_rules(tokenizer_with_profile, tokenizer, testdata):
     assert tokenizer.rules('abc') == 'abc'
     assert tokenizer_with_profile.rules("aabchonn-ih") == "  ii-ii"
-    assert Tokenizer(profile=_test_path('profile_without_rules.prf')).rules('aa') != \
+    assert Tokenizer(profile=testdata / 'profile_without_rules.prf').rules('aa') != \
         tokenizer_with_profile.rules('aa')
     rules = Rules((r'(a|á|e|é|i|í|o|ó|u|ú)(n)(\s)(a|á|e|é|i|í|o|ó|u|ú)', r'\1 \2 \4'))
     assert rules.apply('tan ab') == 'ta n ab'
