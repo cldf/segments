@@ -305,19 +305,24 @@ class Tokenizer(object):
         count = len(graphemes)
         for grapheme in reversed(graphemes):
             count -= 1
-            if len(grapheme) == 1 and unicodedata.category(grapheme) == "Lm" \
-                    and not ord(grapheme) in [712, 716]:
+            # catch and repair stress marks
+            if len(grapheme) == 1 and ord(grapheme) in [712, 716]:
+                result[-1] = grapheme + result[-1]
+                temp = ""
+                continue
+            # catch and repair prenasalization
+            if len(grapheme) == 1 and grapheme in ["ᵐ", "ⁿ", "ᶮ", "ᵑ"]:
+                result[-1] = grapheme + result[-1]
+                temp = ""
+                continue
+
+            if len(grapheme) == 1 and unicodedata.category(grapheme) == "Lm":
                 temp = grapheme + temp
                 # hack for the cases where a space modifier is the first character in the
                 # string
                 if count == 0:
                     result[-1] = temp + result[-1]
                 continue  # pragma: no cover
-            # catch and repair stress marks
-            if len(grapheme) == 1 and ord(grapheme) in [712, 716]:
-                result[-1] = grapheme + result[-1]
-                temp = ""
-                continue
 
             # combine contour tone marks (non-accents)
             if len(grapheme) == 1 and unicodedata.category(grapheme) == "Sk":
