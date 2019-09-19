@@ -1,12 +1,10 @@
-# coding: utf8
-from __future__ import unicode_literals, print_function, division
 import logging
 from collections import Counter, OrderedDict
 import unicodedata
+from pathlib import Path
 
 from csvw import TableGroup, Column
-from clldutils.path import readlines, Path
-from clldutils.misc import UnicodeMixin
+from clldutils.path import readlines
 
 from segments.tree import Tree
 from segments.util import grapheme_pattern
@@ -17,7 +15,7 @@ except ImportError:  # pragma: no cover
     JSONDecodeError = ValueError
 
 
-class Profile(UnicodeMixin):
+class Profile(object):
     """
     An Orthography Profile as specified by Moran and Cysouw 2018.
     """
@@ -144,7 +142,7 @@ class Profile(UnicodeMixin):
     def from_textfile(cls, fname, mapping='mapping'):
         return cls.from_text(' '.join(readlines(fname)), mapping=mapping)
 
-    def __unicode__(self):
+    def __str__(self):
         """
         A Profile is represented as tab-separated lines of grapheme specifications.
         """

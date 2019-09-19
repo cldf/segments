@@ -1,9 +1,7 @@
-# -*- coding: utf-8 -*-
 """
 Tokenizer of Unicode characters, grapheme clusters and tailored grapheme clusters
 (of orthographies) given an orthography profile.
 """
-from __future__ import unicode_literals, division, absolute_import, print_function
 import unicodedata
 import logging
 

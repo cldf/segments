@@ -1,8 +1,6 @@
-# coding: utf8
 """
 Default implementations for error handlers
 """
-from __future__ import unicode_literals, print_function, division
 import logging
 
 from segments.util import REPLACEMENT_MARKER

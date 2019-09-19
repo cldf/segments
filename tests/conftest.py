@@ -1,6 +1,6 @@
 import pytest
 
-from clldutils.path import Path
+from pathlib import Path
 
 
 @pytest.fixture(scope='session')

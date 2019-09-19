@@ -1,24 +1,18 @@
-# coding: utf8
-from __future__ import unicode_literals, print_function, division
 import sys
+from pathlib import Path
 
-from six import PY2, text_type
-from clldutils.path import Path
 from clldutils.clilib import ArgumentParser, command, ParserError
 
 from segments import Tokenizer, Profile
 
 
 def _write(args, line):
-    line = '%s' % line
-    if PY2:  # pragma: no cover
-        line = line.encode(args.encoding)
-    print(line)
+    print('%s' % line)
 
 
 def _read(args):
     string = args.args[0] if args.args else sys.stdin.read()
-    if not isinstance(string, text_type):
+    if not isinstance(string, str):
         string = string.decode(args.encoding)
     return string.strip()
 

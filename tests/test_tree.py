@@ -1,6 +1,3 @@
-# coding: utf8
-from __future__ import unicode_literals, print_function, division
-
 from segments.tree import Tree
 from segments.util import REPLACEMENT_MARKER
 
