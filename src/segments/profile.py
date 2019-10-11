@@ -2,6 +2,7 @@ import logging
 from collections import Counter, OrderedDict
 import unicodedata
 from pathlib import Path
+import warnings
 
 from csvw import TableGroup, Column
 from clldutils.path import readlines
@@ -109,10 +110,13 @@ class Profile(object):
             raise ValueError('profile description must contain exactly one table')
         metadata = tg.common_props
         metadata.update(fname=Path(fname), form=form)
-        return cls(
-            *[{k: None if (k != cls.GRAPHEME_COL and v == cls.NULL) else v for k, v in d.items()}
-              for d in tg.tables[0].iterdicts(fname=opfname)],
-            **metadata)
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            res = cls(
+                *[{k: None if (k != cls.GRAPHEME_COL and v == cls.NULL) else v for k, v in d.items()}
+                  for d in tg.tables[0].iterdicts(fname=opfname)],
+                **metadata)
+        return res
 
     @classmethod
     def from_text(cls, text, mapping='mapping'):
