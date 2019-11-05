@@ -4,6 +4,13 @@ This project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html
 
 ## [Unreleased]
 
+
+## [2.1.1] - 2019-11-05
+
+Bugfix: Suppress csvw's UserWarning about unknown columns in orthography profiles
+with more than the default columns.
+
+
 ## [2.1.0] - 2019-09-19
 
 - Dropped py2 support
