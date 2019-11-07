@@ -28,6 +28,10 @@ def test_jipa(lang, testdata):
         _read_data(testdata / (lang + '_output.txt'))
 
 
+def test_single_combining_character():
+    assert Tokenizer()("ˈ", ipa=True) == "ˈ"
+
+
 def test_characters():
     t = Tokenizer()
     assert t.characters("ĉháɾã̌ctʼɛ↗ʐː| k͡p") == "c ̂ h a ́ ɾ a ̃ ̌ c t ʼ ɛ ↗ ʐ ː | # k ͡ p"

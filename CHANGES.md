@@ -4,6 +4,10 @@ This project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html
 
 ## [Unreleased]
 
+## [2.1.2] - 2019-11-07
+
+Bugfix: See https://github.com/cldf/segments/issues/46
+
 
 ## [2.1.1] - 2019-11-05
 
