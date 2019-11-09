@@ -1,3 +1,4 @@
+import logging
 import sys
 from pathlib import Path
 
@@ -40,6 +41,7 @@ def profile(args):
 
 
 def main():  # pragma: no cover
+    logging.basicConfig()
     parser = ArgumentParser('segments')
     parser.add_argument("--encoding", help='input encoding', default="utf8")
     parser.add_argument("--profile", help='path to an orthography profile', default=None)
