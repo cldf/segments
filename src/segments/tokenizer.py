@@ -3,7 +3,6 @@ Tokenizer of Unicode characters, grapheme clusters and tailored grapheme cluster
 (of orthographies) given an orthography profile.
 """
 import unicodedata
-import logging
 
 import regex
 from csvw.dsv import reader
@@ -12,8 +11,6 @@ from clldutils.path import readlines
 from segments.util import nfd, grapheme_pattern
 from segments import errors
 from segments.profile import Profile
-
-logging.basicConfig()
 
 
 class Rules(object):
