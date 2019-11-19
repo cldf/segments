@@ -301,7 +301,7 @@ class Tokenizer(object):
         for grapheme in reversed(graphemes):
             count -= 1
             if len(grapheme) == 1 and unicodedata.category(grapheme) == "Lm" \
-                    and not ord(grapheme) in [712, 716]:
+                    and not ord(grapheme) in [712, 716] and result:
                 temp = grapheme + temp
                 # hack for the cases where a space modifier is the first character in the
                 # string
