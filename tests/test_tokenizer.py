@@ -30,6 +30,7 @@ def test_jipa(lang, testdata):
 
 def test_single_combining_character():
     assert Tokenizer()("ˈ", ipa=True) == "ˈ"
+    assert Tokenizer()("ʲ", ipa=True) == "ʲ"
 
 
 def test_characters():
