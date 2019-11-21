@@ -4,6 +4,11 @@ This project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html
 
 ## [Unreleased]
 
+## [2.1.3] - 2019-11-21
+
+Fixed problems with edge cases in the IPA tokenization.
+
+
 ## [2.1.2] - 2019-11-07
 
 Bugfix: See https://github.com/cldf/segments/issues/46
