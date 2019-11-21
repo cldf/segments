@@ -113,7 +113,8 @@ class Profile(object):
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")
             res = cls(
-                *[{k: None if (k != cls.GRAPHEME_COL and v == cls.NULL) else v for k, v in d.items()}
+                *[{k: None if (k != cls.GRAPHEME_COL and v == cls.NULL) else v
+                   for k, v in d.items()}
                   for d in tg.tables[0].iterdicts(fname=opfname)],
                 **metadata)
         return res
