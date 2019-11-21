@@ -6,7 +6,7 @@ segments
 [![PyPI](https://img.shields.io/pypi/v/segments.svg)](https://pypi.org/project/segments)
 
 
-[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.1051158.svg)](https://doi.org/10.5281/zenodo.1051158)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.1051157.svg)](https://doi.org/10.5281/zenodo.1051157)
 
 The segments package provides Unicode Standard tokenization routines and orthography segmentation,
 implementing the linear algorithm described in the orthography profile specification from 
