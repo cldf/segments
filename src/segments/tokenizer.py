@@ -301,7 +301,7 @@ class Tokenizer(object):
         for grapheme in reversed(graphemes):
             count -= 1
             if len(grapheme) == 1 and unicodedata.category(grapheme) == "Lm" \
-                    and not ord(grapheme) in [712, 716] and len(graphemes) > 1:
+                    and not ord(grapheme) in [704, 712, 716] and len(graphemes) > 1:
                 temp = grapheme + temp
                 # hack for the cases where a space modifier is the first character in the
                 # string
@@ -309,7 +309,7 @@ class Tokenizer(object):
                     result[-1] = temp + result[-1]
                 continue  # pragma: no cover
             # catch and repair stress marks
-            if len(grapheme) == 1 and (ord(grapheme) in [712, 716]) and result:
+            if len(grapheme) == 1 and (ord(grapheme) in [704, 712, 716]) and result:
                 # If result == [], there's nothing to combine with ...
                 result[-1] = grapheme + result[-1]
                 temp = ""
@@ -322,7 +322,7 @@ class Tokenizer(object):
                     temp = ""
                     continue
                 else:
-                    if unicodedata.category(result[-1][0]) == "Sk":
+                    if unicodedata.category(result[-1][0]) == "Sk" or ord(result[-1][0]) == 704:
                         result[-1] = grapheme + result[-1]
                         temp = ""
                         continue
