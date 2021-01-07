@@ -323,7 +323,7 @@ class Tokenizer(object):
                     continue
                 else:
                     if unicodedata.category(result[-1][0]) == "Sk":
-                        result[-1] = grapheme + result[-1]
+                        result[-1] = grapheme + temp + result[-1]
                         temp = ""
                         continue
 
