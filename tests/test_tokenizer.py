@@ -108,6 +108,7 @@ def test_boundaries(tokenizer_with_profile):
         ('aa', dict(form='NFC'), 'a a'),
         ("ĉháɾã̌ctʼɛ↗ʐː| k͡p", {}, "ĉ h á ɾ ã̌ c t ʼ ɛ ↗ ʐ ː | # k͡ p"),
         ("aabchonn-ih", {}, "a a b c h o n n - i h"),
+        ("ʔɓaːn˧˩ ŋaː˦ˀ˥", dict(ipa=True), "ʔ ɓ aː n ˧˩ # ŋ aː ˦ˀ˥"),
     ]
 )
 def test_tokenize(tokenizer, text, kw, result):

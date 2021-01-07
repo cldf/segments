@@ -52,7 +52,7 @@ class Tokenizer(object):
     The tokenizer can be used for pure Unicode character and grapheme
     tokenization, i.e. it uses the Unicode standard grapheme parsing rules, as
     implemented in the Python regex package by Matthew Barnett, to do basic tokenization
-    with the "\X" grapheme regular expression match. This grapheme match
+    with the "\\X" grapheme regular expression match. This grapheme match
     combines one or more Combining Diacritical Marks to their base character.
     These are called "grapheme clusters" in Unicode parlance. With these functions
     the Tokenizer is meant to do basic rudimentary parsing for things like generating
@@ -102,7 +102,7 @@ class Tokenizer(object):
     followed by <space> followed by a second vowel with first vowel
     <space> <n> <space> second vowel, e.g.::
 
-        $ (a|á|e|é|i|í|o|ó|u|ú)(n)(\s)(a|á|e|é|i|í|o|ó|u|ú), \1 \2 \4
+        $ (a|á|e|é|i|í|o|ó|u|ú)(n)(\\s)(a|á|e|é|i|í|o|ó|u|ú), \\1 \\2 \\4
 
     """
     def __init__(self,
@@ -207,7 +207,7 @@ class Tokenizer(object):
         http://www.unicode.org/reports/tr29/
 
         Given a string as input, return a list of Unicode graphemes using the
-        "\X" regular expression.
+        "\\X" regular expression.
 
         Parameters
         ----------
@@ -308,6 +308,7 @@ class Tokenizer(object):
                 if count == 0:
                     result[-1] = temp + result[-1]
                 continue  # pragma: no cover
+
             # catch and repair stress marks
             if len(grapheme) == 1 and (ord(grapheme) in [712, 716]) and result:
                 # If result == [], there's nothing to combine with ...
