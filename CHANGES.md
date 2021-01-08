@@ -4,6 +4,12 @@ This project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html
 
 ## [Unreleased]
 
+
+## [2.2.0] - 2021-01-11
+
+Fixed modifier combination in `ipa` mode.
+
+
 ## [2.1.3] - 2019-11-21
 
 Fixed problems with edge cases in the IPA tokenization.
