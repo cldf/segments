@@ -5,6 +5,12 @@ This project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html
 ## [Unreleased]
 
 
+## [2.2.1] - 2022-07-08
+
+- Fixed compatibility with csvw 3.x.
+- Updated matrix of supported python versions.
+
+
 ## [2.2.0] - 2021-01-11
 
 Fixed modifier combination in `ipa` mode.
