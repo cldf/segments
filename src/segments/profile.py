@@ -1,3 +1,4 @@
+import copy
 import logging
 from collections import Counter, OrderedDict
 import unicodedata
@@ -43,6 +44,12 @@ class Profile(object):
             }
         ]
     }
+
+    @classmethod
+    def default_metadata(cls, fname=None):
+        md = copy.copy(cls.MD)
+        md['tables'][0]['url'] = str(fname or '')
+        return md
 
     def __init__(self, *specs, **kw):
         """
@@ -104,9 +111,9 @@ class Profile(object):
             tg = TableGroup.from_file(fname)
             opfname = None
         except JSONDecodeError:
-            tg = TableGroup.fromvalue(cls.MD)
+            tg = TableGroup.fromvalue(cls.default_metadata(fname))
             opfname = fname
-        if len(tg.tables) != 1:
+        if len(tg.tables) != 1:  # pragma: no cover
             raise ValueError('profile description must contain exactly one table')
         metadata = tg.common_props
         metadata.update(fname=Path(fname), form=form)
@@ -151,7 +158,7 @@ class Profile(object):
         """
         A Profile is represented as tab-separated lines of grapheme specifications.
         """
-        tg = TableGroup.fromvalue(self.MD)
+        tg = TableGroup.fromvalue(self.default_metadata())
         for col in self.column_labels:
             if col != self.GRAPHEME_COL:
                 tg.tables[0].tableSchema.columns.append(
