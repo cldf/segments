@@ -1,7 +1,7 @@
 from segments.errors import replace
 
 
-class TreeNode(object):
+class TreeNode:
     """
     Private class that creates the tree data structure from the orthography profile for
     parsing.
@@ -13,7 +13,7 @@ class TreeNode(object):
         self.sentinel = sentinel
 
 
-class Tree(object):
+class Tree:
     def __init__(self, graphemes):
         def _multigraph(node, line):
             # Internal function to add a multigraph starting at node.

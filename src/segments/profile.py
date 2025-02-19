@@ -1,9 +1,11 @@
 import copy
+import typing
 import logging
-from collections import Counter, OrderedDict
-import unicodedata
-from pathlib import Path
+import pathlib
 import warnings
+import collections
+import unicodedata
+import json.decoder
 
 from csvw import TableGroup, Column
 from clldutils.path import readlines
@@ -11,13 +13,8 @@ from clldutils.path import readlines
 from segments.tree import Tree
 from segments.util import grapheme_pattern
 
-try:  # pragma: no cover
-    from json.decoder import JSONDecodeError
-except ImportError:  # pragma: no cover
-    JSONDecodeError = ValueError
 
-
-class Profile(object):
+class Profile:
     """
     An Orthography Profile as specified by Moran and Cysouw 2018.
     """
@@ -46,12 +43,12 @@ class Profile(object):
     }
 
     @classmethod
-    def default_metadata(cls, fname=None):
+    def default_metadata(cls, fname=None) -> dict:
         md = copy.copy(cls.MD)
         md['tables'][0]['url'] = str(fname or '')
         return md
 
-    def __init__(self, *specs, **kw):
+    def __init__(self, *specs: dict, **kw):
         """
 
         Parameters
@@ -64,7 +61,7 @@ class Profile(object):
             - form: Unicode normalization to apply to the data in the profile before use.
             - remaining keyword arguments are assigned as dict to `Profile.metadata`.
         """
-        self.graphemes = OrderedDict()
+        self.graphemes = collections.OrderedDict()
         self.column_labels = set()
         self.fname = kw.pop('fname', None)
         self.form = kw.pop('form', None)
@@ -95,7 +92,7 @@ class Profile(object):
                     'line {0}:duplicate grapheme in profile: {1}'.format(i + 2, grapheme))
         self.tree = Tree(list(self.graphemes.keys()))
 
-    def iteritems(self):
+    def iteritems(self) -> typing.Generator[dict, None, None]:
         for grapheme, spec in self.graphemes.items():
             res = {self.GRAPHEME_COL: grapheme}
             res.update({k: None for k in self.column_labels})
@@ -103,20 +100,20 @@ class Profile(object):
             yield res
 
     @classmethod
-    def from_file(cls, fname, form=None):
+    def from_file(cls, fname, form=None) -> 'Profile':
         """
         Read an orthography profile from a metadata file or a default tab-separated profile file.
         """
         try:
             tg = TableGroup.from_file(fname)
             opfname = None
-        except JSONDecodeError:
+        except json.decoder.JSONDecodeError:
             tg = TableGroup.fromvalue(cls.default_metadata(fname))
             opfname = fname
         if len(tg.tables) != 1:  # pragma: no cover
             raise ValueError('profile description must contain exactly one table')
         metadata = tg.common_props
-        metadata.update(fname=Path(fname), form=form)
+        metadata.update(fname=pathlib.Path(fname), form=form)
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")
             res = cls(
@@ -127,7 +124,7 @@ class Profile(object):
         return res
 
     @classmethod
-    def from_text(cls, text, mapping='mapping'):
+    def from_text(cls, text: str, mapping='mapping') -> 'Profile':
         """
         Create a Profile instance from the Unicode graphemes found in `text`.
 
@@ -141,9 +138,9 @@ class Profile(object):
         A Profile instance.
 
         """
-        graphemes = Counter(grapheme_pattern.findall(text))
+        graphemes = collections.Counter(grapheme_pattern.findall(text))
         specs = [
-            OrderedDict([
+            collections.OrderedDict([
                 (cls.GRAPHEME_COL, grapheme),
                 ('frequency', frequency),
                 (mapping, grapheme)])
@@ -151,7 +148,7 @@ class Profile(object):
         return cls(*specs)
 
     @classmethod
-    def from_textfile(cls, fname, mapping='mapping'):
+    def from_textfile(cls, fname, mapping='mapping') -> 'Profile':
         return cls.from_text(' '.join(readlines(fname)), mapping=mapping)
 
     def __str__(self):

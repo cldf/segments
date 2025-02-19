@@ -2,6 +2,7 @@
 Tokenizer of Unicode characters, grapheme clusters and tailored grapheme clusters
 (of orthographies) given an orthography profile.
 """
+import typing
 import unicodedata
 
 import regex
@@ -13,16 +14,16 @@ from segments import errors
 from segments.profile import Profile
 
 
-class Rules(object):
+class Rules:
     """
     Rules are given in tuple format, comma delimited.
     Regular expressions are given in Python syntax.
     """
-    def __init__(self, *rules):
+    def __init__(self, *rules: typing.Tuple[str, str]):
         self._rules = [(regex.compile(rule), replacement) for rule, replacement in rules]
 
     @classmethod
-    def from_file(cls, fname):
+    def from_file(cls, fname) -> 'Rules':
         return cls(*list(reader(readlines(fname, comment='#', normalize='NFD'))))
 
     def apply(self, s):
@@ -31,7 +32,7 @@ class Rules(object):
         return s
 
 
-class Tokenizer(object):
+class Tokenizer:
     """
     Class for Unicode character and grapheme tokenization.
 
@@ -108,9 +109,9 @@ class Tokenizer(object):
     def __init__(self,
                  profile=None,
                  rules=None,
-                 errors_strict=errors.strict,
-                 errors_replace=errors.replace,
-                 errors_ignore=errors.ignore):
+                 errors_strict: typing.Callable[[str], typing.Optional[str]] = errors.strict,
+                 errors_replace: typing.Callable[[str], typing.Optional[str]] = errors.replace,
+                 errors_ignore: typing.Callable[[str], typing.Optional[str]] = errors.ignore):
         self.op = None
         if isinstance(profile, Profile):
             self.op = profile
@@ -128,13 +129,13 @@ class Tokenizer(object):
         }
 
     def __call__(self,
-                 string,
-                 column=Profile.GRAPHEME_COL,
-                 form=None,
-                 ipa=False,
+                 string: str,
+                 column: str = Profile.GRAPHEME_COL,
+                 form: typing.Optional[typing.Literal['NFC', 'NFKC', 'NFD', 'NFKD']] = None,
+                 ipa: bool = False,
                  segment_separator=' ',
                  separator=' # ',
-                 errors='replace'):
+                 errors: typing.Literal['replace', 'strict', 'ignore'] = 'replace') -> str:
         """
         The main task of a Tokenizer is tokenizing! This is what happens when called.
 
@@ -180,7 +181,7 @@ class Tokenizer(object):
 
         return separator.join(pp(word) for word in res)
 
-    def characters(self, string, segment_separator=' ', separator=' # ',):
+    def characters(self, string, segment_separator=' ', separator=' # ',) -> str:
         """
         Given a string as input, return a space-delimited string of Unicode characters
         (code points rendered as glyphs).
