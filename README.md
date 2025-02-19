@@ -2,7 +2,6 @@ segments
 ========
 
 [![Build Status](https://github.com/cldf/segments/workflows/tests/badge.svg)](https://github.com/cldf/segments/actions?query=workflow%3Atests)
-[![codecov](https://codecov.io/gh/cldf/segments/branch/master/graph/badge.svg)](https://codecov.io/gh/cldf/segments)
 [![PyPI](https://img.shields.io/pypi/v/segments.svg)](https://pypi.org/project/segments)
 
 
