@@ -1,6 +1,31 @@
 import io
+import argparse
 
-from segments.__main__ import tokenize, profile
+import pytest
+
+from segments.__main__ import tokenize, profile, main
+
+
+def test_main(capsys):
+    with pytest.raises(SystemExit):
+        main(argparse.Namespace(command=None))
+    out, err = capsys.readouterr()
+    assert 'segments' in out
+
+    with pytest.raises(SystemExit):
+        main(argparse.Namespace(command='help', args=['tokenize']))
+    out, err = capsys.readouterr()
+    assert 'Tokenize' in out
+
+    with pytest.raises(SystemExit):
+        main(argparse.Namespace(command='tokenize', args=['abc'], profile=None, mapping=None))
+    out, err = capsys.readouterr()
+    assert 'a b c' in out
+
+    with pytest.raises(SystemExit):
+        main(argparse.Namespace(command='tokenize', args=['abc'], profile='xyz', mapping=None))
+    out, err = capsys.readouterr()
+    assert 'existing' in out
 
 
 def test_tokenize(capsys, mocker):

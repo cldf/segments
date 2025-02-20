@@ -3,15 +3,23 @@ Tokenizer of Unicode characters, grapheme clusters and tailored grapheme cluster
 (of orthographies) given an orthography profile.
 """
 import typing
+import pathlib
 import unicodedata
 
 import regex
 from csvw.dsv import reader
-from clldutils.path import readlines
 
 from segments.util import nfd, grapheme_pattern
 from segments import errors
 from segments.profile import Profile
+
+
+def iterlines(p: typing.Union[pathlib.Path, str]) -> typing.Generator[str, None, None]:
+    with pathlib.Path(p).open(encoding='utf-8') as fp:
+        for line in fp.readlines():
+            line = line.strip()
+            if line and not line.startswith('#'):
+                yield unicodedata.normalize('NFD', line)
 
 
 class Rules:
@@ -24,7 +32,7 @@ class Rules:
 
     @classmethod
     def from_file(cls, fname) -> 'Rules':
-        return cls(*list(reader(readlines(fname, comment='#', normalize='NFD'))))
+        return cls(*list(reader(list(iterlines(fname)))))
 
     def apply(self, s):
         for rule, replacement in self._rules:

@@ -1,14 +1,33 @@
-import logging
 import sys
-from pathlib import Path
-
-from clldutils.clilib import ArgumentParser, command, ParserError
+import logging
+import pathlib
+import argparse
 
 from segments import Tokenizer, Profile
 
 
-def _write(args, line):
-    print('%s' % line)
+class ParserError(Exception):
+    pass
+
+
+def tokenize(args):
+    """
+    Tokenize a string (passed as argument or read from stdin)
+
+    segments [--profile=PATH/TO/PROFILE] tokenize [STRING]
+    """
+    if args.profile and not pathlib.Path(args.profile).exists():  # pragma: no cover
+        raise ParserError('--profile must be a path for an existing file')
+    print(Tokenizer(profile=args.profile)(_read(args), column=args.mapping))
+
+
+def profile(args):
+    """
+    Create an orthography profile for a string (passed as argument or read from stdin)
+
+    segments profile [STRING]
+    """
+    print(Profile.from_text(_read(args)))
 
 
 def _read(args):
@@ -18,38 +37,43 @@ def _read(args):
     return string.strip()
 
 
-@command()
-def tokenize(args):
-    """
-    Tokenize a string (passed as argument or read from stdin)
-
-    segments [--profile=PATH/TO/PROFILE] tokenize [STRING]
-    """
-    if args.profile and not Path(args.profile).exists():  # pragma: no cover
-        raise ParserError('--profile must be a path for an existing file')
-    _write(args, Tokenizer(profile=args.profile)(_read(args), column=args.mapping))
-
-
-@command()
-def profile(args):
-    """
-    Create an orthography profile for a string (passed as argument or read from stdin)
-
-    segments profile [STRING]
-    """
-    _write(args, Profile.from_text(_read(args)))
-
-
-def main():  # pragma: no cover
+def main(parsed_args=None):
+    commands = {'tokenize': tokenize, 'profile': profile}
     logging.basicConfig()
-    parser = ArgumentParser('segments')
+    parser = argparse.ArgumentParser(
+        description="Main command line interface of the segments package.",
+        epilog="Use '%(prog)s help <cmd>' to get help about individual commands.")
+    parser.add_argument("--verbosity", help="increase output verbosity")
+    parser.add_argument('command', help=' | '.join(commands))
+    parser.add_argument('args', nargs=argparse.REMAINDER)
     parser.add_argument("--encoding", help='input encoding', default="utf8")
     parser.add_argument("--profile", help='path to an orthography profile', default=None)
     parser.add_argument(
         "--mapping",
         help='column name in ortho profile to map graphemes',
         default=Profile.GRAPHEME_COL)
-    sys.exit(parser.main())
+
+    args = parsed_args or parser.parse_args()
+    if args.command == 'help' and len(args.args):
+        # As help text for individual commands we simply re-use the docstrings of the
+        # callables registered for the command:
+        print(commands[args.args[0]].__doc__.strip()
+              if args.args[0] in commands else "Invalid command: '{}'".format(args.args[0]))
+    else:
+        if args.command not in commands:
+            print('invalid command')
+            parser.print_help()
+            sys.exit(64)
+        try:
+            commands[args.command](args)
+        except ParserError as e:
+            print(e)
+            print(commands[args.command].__doc__.strip())
+            sys.exit(64)
+        except Exception as e:  # pragma: no cover
+            print(e)
+            sys.exit(1)
+    sys.exit(0)
 
 
 if __name__ == '__main__':  # pragma: no cover

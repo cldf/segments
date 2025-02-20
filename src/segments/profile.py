@@ -8,7 +8,6 @@ import unicodedata
 import json.decoder
 
 from csvw import TableGroup, Column
-from clldutils.path import readlines
 
 from segments.tree import Tree
 from segments.util import grapheme_pattern
@@ -149,7 +148,9 @@ class Profile:
 
     @classmethod
     def from_textfile(cls, fname, mapping='mapping') -> 'Profile':
-        return cls.from_text(' '.join(readlines(fname)), mapping=mapping)
+        with pathlib.Path(fname).open(encoding='utf-8') as fp:
+            lines = fp.readlines()
+            return cls.from_text(' '.join(lines), mapping=mapping)
 
     def __str__(self):
         """

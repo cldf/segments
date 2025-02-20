@@ -1,7 +1,7 @@
+import json
 from copy import deepcopy
 
 import pytest
-from clldutils import jsonlib
 
 from segments import Profile
 
@@ -20,11 +20,11 @@ def test_missing_grapheme():
         Profile({'Grapheme': ''})
 
 
-def test_profile_with_bad_metadata(tmpdir):
-    mdpath = tmpdir / 'md.json'
+def test_profile_with_bad_metadata(tmp_path):
+    mdpath = tmp_path / 'md.json'
     md = deepcopy(Profile.MD)
     md['tables'].append({'tableSchema': {'columns': []}})
-    jsonlib.dump(md, str(mdpath))
+    mdpath.write_text(json.dumps(md), encoding='utf-8')
 
     with pytest.raises(ValueError):
         Profile.from_file(str(mdpath))

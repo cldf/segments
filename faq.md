@@ -11,11 +11,12 @@ use the common regular expression markers for start `^` and end `$`.
 ```python
 >>> from segments.tokenizer import Profile
 >>> prf = Profile(
- {'Grapheme': 'c', 'IPA': 'c'},
- {'Grapheme': '^', 'IPA': 'NULL'},
- {'Grapheme': '$', 'IPA': 'NULL'},
- {'Grapheme': 'a', 'IPA': 'b'},
- {'Grapheme': '^a', 'IPA': 'A'})
+    {'Grapheme': 'th', 'IPA': 'tH'},
+    {'Grapheme': 'c', 'IPA': 'c'},
+    {'Grapheme': '^', 'IPA': None},
+    {'Grapheme': '$', 'IPA': None},
+    {'Grapheme': 'a', 'IPA': 'b'},
+    {'Grapheme': '^a', 'IPA': 'A'})
 ```
 
 Note: We treat word-initial `a` differently!

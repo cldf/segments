@@ -6,8 +6,7 @@ from segments import Tokenizer, Profile, Rules, REPLACEMENT_MARKER
 
 
 def _read_data(fname):
-    with fname.open(encoding="utf-8") as fp:
-        return fp.read()
+    return fname.read_text(encoding="utf-8")
 
 
 @pytest.fixture
