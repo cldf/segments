@@ -3,7 +3,7 @@
 This project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
 
-## [Unreleased]
+## [2.3.0] - 2025-02-20
 
 - Updated project scaffolding.
 - Removed dependency on clldutils.
