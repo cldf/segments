@@ -9,7 +9,7 @@ from segments import Profile
 def test_duplicate_grapheme(mocker):
     logging = mocker.patch('segments.profile.logging')
     Profile({'Grapheme': 'a'}, {'Grapheme': 'a'})
-    assert logging.getLogger.return_value.warning.call_args[0][0].startswith('line 3')
+    assert logging.getLogger.return_value.warning.call_args[0][0].startswith('line')
 
 
 def test_missing_grapheme():

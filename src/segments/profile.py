@@ -1,9 +1,13 @@
+"""
+Orthography profiles.
+"""
 import copy
-import typing
+from typing import Union, Optional, Any
 import logging
 import pathlib
 import warnings
 import collections
+from collections.abc import Generator
 import unicodedata
 import json.decoder
 
@@ -11,6 +15,8 @@ from csvw import TableGroup, Column
 
 from segments.tree import Tree
 from segments.util import grapheme_pattern
+
+PathType = Union[str, pathlib.Path]
 
 
 class Profile:
@@ -42,7 +48,8 @@ class Profile:
     }
 
     @classmethod
-    def default_metadata(cls, fname=None) -> dict:
+    def default_metadata(cls, fname: Optional[PathType] = None) -> dict[str, Any]:
+        """The default CSVW metadata to interpret a tab-separated values file as a Profile."""
         md = copy.copy(cls.MD)
         md['tables'][0]['url'] = str(fname or '')
         return md
@@ -87,19 +94,19 @@ class Profile:
             if grapheme not in self.graphemes:
                 self.graphemes[grapheme] = spec
             else:
-                log.warning(
-                    'line {0}:duplicate grapheme in profile: {1}'.format(i + 2, grapheme))
+                log.warning('line %s:duplicate grapheme in profile: %s', i + 2, grapheme)
         self.tree = Tree(list(self.graphemes.keys()))
 
-    def iteritems(self) -> typing.Generator[dict, None, None]:
+    def iteritems(self) -> Generator[dict[str, Any], None, None]:
+        """Yield grapheme specs from the Profile."""
         for grapheme, spec in self.graphemes.items():
             res = {self.GRAPHEME_COL: grapheme}
             res.update({k: None for k in self.column_labels})
-            res.update({k: v for k, v in spec.items()})
+            res.update(spec.items())
             yield res
 
     @classmethod
-    def from_file(cls, fname, form=None) -> 'Profile':
+    def from_file(cls, fname: PathType, form: Optional[str] = None) -> 'Profile':
         """
         Read an orthography profile from a metadata file or a default tab-separated profile file.
         """
@@ -123,7 +130,7 @@ class Profile:
         return res
 
     @classmethod
-    def from_text(cls, text: str, mapping='mapping') -> 'Profile':
+    def from_text(cls, text: str, mapping: str = 'mapping') -> 'Profile':
         """
         Create a Profile instance from the Unicode graphemes found in `text`.
 
@@ -147,7 +154,8 @@ class Profile:
         return cls(*specs)
 
     @classmethod
-    def from_textfile(cls, fname, mapping='mapping') -> 'Profile':
+    def from_textfile(cls, fname: PathType, mapping: str = 'mapping') -> 'Profile':
+        """Initialize a Profile from the graphemes found in a text file."""
         with pathlib.Path(fname).open(encoding='utf-8') as fp:
             lines = fp.readlines()
             return cls.from_text(' '.join(lines), mapping=mapping)

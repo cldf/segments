@@ -2,19 +2,23 @@
 Tokenizer of Unicode characters, grapheme clusters and tailored grapheme clusters
 (of orthographies) given an orthography profile.
 """
-import typing
+from typing import Union, Callable, Optional, Literal, Any
 import pathlib
 import unicodedata
+from collections.abc import Generator
 
 import regex
 from csvw.dsv import reader
 
 from segments.util import nfd, grapheme_pattern
-from segments import errors
+from segments import errors as err
 from segments.profile import Profile
 
+PathType = Union[pathlib.Path, str]
 
-def iterlines(p: typing.Union[pathlib.Path, str]) -> typing.Generator[str, None, None]:
+
+def iterlines(p: PathType) -> Generator[str, None, None]:
+    """Yield lines from a file suitable for feeding into dsv.reader."""
     with pathlib.Path(p).open(encoding='utf-8') as fp:
         for line in fp.readlines():
             line = line.strip()
@@ -26,15 +30,21 @@ class Rules:
     """
     Rules are given in tuple format, comma delimited.
     Regular expressions are given in Python syntax.
+
+    >>> r = Rules(('a+', 'a'))
+    >>> r.apply('aaabaaa')
+    'aba'
     """
-    def __init__(self, *rules: typing.Tuple[str, str]):
+    def __init__(self, *rules: tuple[str, str]):
         self._rules = [(regex.compile(rule), replacement) for rule, replacement in rules]
 
     @classmethod
-    def from_file(cls, fname) -> 'Rules':
+    def from_file(cls, fname: PathType) -> 'Rules':
+        """Read rules from a file."""
         return cls(*list(reader(list(iterlines(fname)))))
 
-    def apply(self, s):
+    def apply(self, s: str) -> str:
+        """Apply rules to string."""
         for rule, replacement in self._rules:
             s = rule.sub(replacement, s)
         return s
@@ -114,12 +124,12 @@ class Tokenizer:
         $ (a|á|e|é|i|í|o|ó|u|ú)(n)(\\s)(a|á|e|é|i|í|o|ó|u|ú), \\1 \\2 \\4
 
     """
-    def __init__(self,
-                 profile=None,
-                 rules=None,
-                 errors_strict: typing.Callable[[str], typing.Optional[str]] = errors.strict,
-                 errors_replace: typing.Callable[[str], typing.Optional[str]] = errors.replace,
-                 errors_ignore: typing.Callable[[str], typing.Optional[str]] = errors.ignore):
+    def __init__(self,  # pylint: disable=R0913,R0917
+                 profile: Optional[Union[PathType, Profile]] = None,
+                 rules: Optional[PathType] = None,
+                 errors_strict: Callable[[str], Optional[str]] = err.strict,
+                 errors_replace: Callable[[str], Optional[str]] = err.replace,
+                 errors_ignore: Callable[[str], Optional[str]] = err.ignore):
         self.op = None
         if isinstance(profile, Profile):
             self.op = profile
@@ -136,14 +146,14 @@ class Tokenizer:
             'ignore': errors_ignore,
         }
 
-    def __call__(self,
+    def __call__(self,  # pylint: disable=R0913,R0917
                  string: str,
                  column: str = Profile.GRAPHEME_COL,
-                 form: typing.Optional[typing.Literal['NFC', 'NFKC', 'NFD', 'NFKD']] = None,
+                 form: Optional[Literal['NFC', 'NFKC', 'NFD', 'NFKD']] = None,
                  ipa: bool = False,
-                 segment_separator=' ',
-                 separator=' # ',
-                 errors: typing.Literal['replace', 'strict', 'ignore'] = 'replace') -> str:
+                 segment_separator: str = ' ',
+                 separator: str = ' # ',
+                 errors: Literal['replace', 'strict', 'ignore'] = 'replace') -> str:
         """
         The main task of a Tokenizer is tokenizing! This is what happens when called.
 
@@ -189,7 +199,7 @@ class Tokenizer:
 
         return separator.join(pp(word) for word in res)
 
-    def characters(self, string, segment_separator=' ', separator=' # ',) -> str:
+    def characters(self, string: str, segment_separator: str = ' ', separator: str = ' # ',) -> str:
         """
         Given a string as input, return a space-delimited string of Unicode characters
         (code points rendered as glyphs).
@@ -210,7 +220,7 @@ class Tokenizer:
         """
         return separator.join(segment_separator.join(word) for word in nfd(string).split())
 
-    def grapheme_clusters(self, word):
+    def grapheme_clusters(self, word: str) -> list[Any]:
         """
         See: Unicode Standard Annex #29: UNICODE TEXT SEGMENTATION
         http://www.unicode.org/reports/tr29/
@@ -232,7 +242,12 @@ class Tokenizer:
         # init the regex Unicode grapheme cluster match
         return grapheme_pattern.findall(word)
 
-    def transform(self, word, column=Profile.GRAPHEME_COL, error=errors.replace):
+    def transform(
+            self,
+            word: str,
+            column: str = Profile.GRAPHEME_COL,
+            error=err.replace,
+    ) -> list[str]:
         """
         Transform a string's graphemes into the mappings given in a different column
         in the orthography profile.
@@ -255,7 +270,7 @@ class Tokenizer:
         assert self.op, 'method can only be called with orthography profile.'
 
         if column != Profile.GRAPHEME_COL and column not in self.op.column_labels:
-            raise ValueError("Column {0} not found in profile.".format(column))
+            raise ValueError(f"Column {column} not found in profile.")
 
         word = self.op.tree.parse(word, error)
         if column == Profile.GRAPHEME_COL:
@@ -273,7 +288,7 @@ class Tokenizer:
                     out.append(target)
         return out
 
-    def rules(self, word):
+    def rules(self, word: str) -> str:
         """
         Function to tokenize input string and return output of str with ortho rules
         applied.
@@ -291,7 +306,7 @@ class Tokenizer:
         """
         return self._rules.apply(word) if self._rules else word
 
-    def combine_modifiers(self, graphemes):
+    def combine_modifiers(self, graphemes: list[str]) -> list[str]:
         """
         Given a string that is space-delimited on Unicode grapheme clusters,
         group Unicode modifier letters with their preceding base characters,
@@ -331,11 +346,10 @@ class Tokenizer:
                     result.append(grapheme)
                     temp = ""
                     continue
-                else:
-                    if unicodedata.category(result[-1][0]) == "Sk":
-                        result[-1] = grapheme + temp + result[-1]
-                        temp = ""
-                        continue
+                if unicodedata.category(result[-1][0]) == "Sk":
+                    result[-1] = grapheme + temp + result[-1]
+                    temp = ""
+                    continue
 
             result.append(grapheme + temp)
             temp = ""

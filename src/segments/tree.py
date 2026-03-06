@@ -1,20 +1,35 @@
+"""
+A parse tree.
+"""
+import dataclasses
+from collections.abc import Iterable
+
 from segments.errors import replace
 
 
+@dataclasses.dataclass
 class TreeNode:
     """
     Private class that creates the tree data structure from the orthography profile for
     parsing.
     """
-
-    def __init__(self, char, sentinel=False):
-        self.char = char
-        self.children = {}
-        self.sentinel = sentinel
+    char: str
+    children: dict[str, 'TreeNode'] = dataclasses.field(default_factory=dict)
+    sentinel: bool = False
 
 
-class Tree:
-    def __init__(self, graphemes):
+class Tree:  # pylint: disable=R0903
+    """
+    The parse tree.
+
+    >>> t = Tree('abcdefg')
+    >>> t.parse('abcde')
+    ['a', 'b', 'c', 'd', 'e']
+    >>> t = Tree(['ab', 'c', 'de'])
+    >>> t.parse('abcde')
+    ['ab', 'c', 'de']
+    """
+    def __init__(self, graphemes: Iterable[str]):
         def _multigraph(node, line):
             # Internal function to add a multigraph starting at node.
             for char in line:
@@ -25,7 +40,8 @@ class Tree:
         for grapheme in graphemes:
             _multigraph(self.root, grapheme)
 
-    def parse(self, line, error=replace):
+    def parse(self, line: str, error=replace) -> list[str]:
+        """Segment `line` into graphemes."""
         res, idx = self._parse(self.root, line, 0)
         rem = line[idx:]
         while rem:
@@ -37,7 +53,7 @@ class Tree:
             rem = rem[i:]
         return res
 
-    def _parse(self, root, line, idx):
+    def _parse(self, root: TreeNode, line: str, idx: int) -> tuple[list[str], int]:
         """
         :param root: Tree node.
         :param line: String to parse.

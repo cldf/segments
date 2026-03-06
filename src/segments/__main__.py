@@ -1,3 +1,6 @@
+"""
+CLI for the segments package.
+"""
 import sys
 import logging
 import pathlib
@@ -6,7 +9,7 @@ import argparse
 from segments import Tokenizer, Profile
 
 
-class ParserError(Exception):
+class ParserError(Exception):  # pylint: disable=C0115
     pass
 
 
@@ -37,7 +40,7 @@ def _read(args):
     return string.strip()
 
 
-def main(parsed_args=None):
+def main(parsed_args=None):  # pylint: disable=C0116
     commands = {'tokenize': tokenize, 'profile': profile}
     logging.basicConfig()
     parser = argparse.ArgumentParser(
@@ -58,7 +61,7 @@ def main(parsed_args=None):
         # As help text for individual commands we simply re-use the docstrings of the
         # callables registered for the command:
         print(commands[args.args[0]].__doc__.strip()
-              if args.args[0] in commands else "Invalid command: '{}'".format(args.args[0]))
+              if args.args[0] in commands else f"Invalid command: '{args.args[0]}'")
     else:
         if args.command not in commands:
             print('invalid command')
@@ -70,7 +73,7 @@ def main(parsed_args=None):
             print(e)
             print(commands[args.command].__doc__.strip())
             sys.exit(64)
-        except Exception as e:  # pragma: no cover
+        except Exception as e:  # pragma: no cover  # pylint: disable=W0718
             print(e)
             sys.exit(1)
     sys.exit(0)

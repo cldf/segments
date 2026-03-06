@@ -1,3 +1,6 @@
+"""
+Utilities
+"""
 import functools
 import unicodedata
 
