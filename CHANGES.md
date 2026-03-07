@@ -3,7 +3,7 @@
 This project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
 
-## Unreleased
+## [2.4.0] - 2026-03-07
 
 - Drop Python 3.8 compatibility.
 - Test on Python 3.14.
